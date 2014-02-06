@@ -32,9 +32,26 @@ int main(int argc, char* argv[]){
     //the last argument must be NULL to terminate list
     exec_args[3] = NULL;  
 
+    int close_rc = close(STDOUT_FILENO);
+    if(close_rc < 0){
+      perror("close");
+      exit(1);
+    }
+
+    //Open a new file
+    int fd = open("redirected_output.txt",O_CREAT|  O_RDWR | O_TRUNC, S_IRWXU);
+    if(fd  < 0){
+      perror("open");
+      exit(1);
+    }
+
+    printf("fd = %d\n", fd);
+
     //call execvp
     //execvp should have never retunr
     execvp("ls", exec_args);
+
+    /* execvp will return if there is an error, can be used to be set as a error handler for invalid inputs*/
 
     printf("You'll never see this\n");
 
