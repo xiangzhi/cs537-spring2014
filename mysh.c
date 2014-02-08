@@ -11,6 +11,7 @@ void displayError(void);
 char* prompt(void);
 int execute(char**, int);
 int parseArgv(char*, char***);
+int buildIn(char**, int);
 
 
 int main(int argc, char* argv[]) {
@@ -33,13 +34,13 @@ int main(int argc, char* argv[]) {
         char** exec_args;
         int num_argv = parseArgv(cmd, &exec_args);
 
-        //check whether we reach the quit phase
-        if (strcmp(exec_args[0], "exit") == 0) {
+        int check = buildIn(exec_args, num_argv);
+        if(check == 0 || check == 2){
             free(exec_args);
-            exit(0);
+            continue;
         }
 
-        execute(exec_args, num_argv);
+        check = execute(exec_args, num_argv);
         free(exec_args);
     }
     //this is an infinite loop
@@ -147,14 +148,61 @@ int parseArgv(char* input, char*** exec_args){
     while(token != NULL)
     {
         list[index] = token;
+        if(token)
         index++;
         token = strtok(NULL, " ");
     }
     //the last argument is a NULL
     list[index] = NULL;
-    index++;
 
     free(pointer);
     *exec_args = list;
     return index;
+}
+
+int buildIn(char** exec_args, int num_argv){
+    char* command = exec_args[0];
+
+    //check whether we reach the quit phase
+    if (strcmp(command, "exit") == 0) {
+        free(exec_args);
+        exit(0);
+    }
+    //check for pwd
+    if (strcmp(command, "pwd") == 0) {
+        char* path = getcwd(NULL, 0);
+        write(STDIN_FILENO, path, strlen(path));
+        write(STDIN_FILENO, "\n", 1);
+        free(path);
+        return 0;
+    }
+    //check for cd
+    if (strcmp(command, "cd") == 0){
+        if(num_argv > 2){
+            displayError();
+            free(path);
+            return 2;
+        }
+        char* path;
+        if(num_argv == 1){
+            path = getenv("HOME");
+        }
+        else{
+            path = exec_args[1];
+        }
+        if(path == NULL){
+            displayError();
+            exit(1);
+        }
+        //try change directories
+        if(chdir(path) != 0){
+            displayError();
+            free(path);
+            return 2;
+        }
+        free(path);
+        return 0;
+    }
+
+    return 1;
 }
