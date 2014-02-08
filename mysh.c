@@ -14,7 +14,7 @@ char* prompt(void);
 int execute(char**, int);
 int parseArgv(char*, char***);
 int buildIn(char**, int);
-void execPython(char*);
+void execPython(char*, int, char**);
 void redirectOutput(char*);
 
 
@@ -171,6 +171,15 @@ int buildIn(char** exec_args, int num_argv){
         free(exec_args);
         exit(0);
     }
+    
+    // Check for .py substring
+    if (strstr(command, ".py") != NULL) {
+        printf("Running Python");
+        execPython(command, num_argv, exec_args);
+        return 0;
+    }
+
+    
     //check for pwd
     if (strcmp(command, "pwd") == 0) {
         char* path = getcwd(NULL, 0);
@@ -225,16 +234,20 @@ void redirectOutput(char* fileName) {
     }
 }
 
-void execPython(char* fileName) {
+void execPython(char* fileName, int argc, char* argv[]) {
     FILE* fileptr = fopen(fileName, "rb");
     if (fileptr == NULL) {
         printf("script could not be found %s", fileName);
         exit(1);
     }
+    
+    Py_SetProgramName(fileName);
     Py_Initialize();
+    PySys_SetArgv(argc, argv);
     PyRun_SimpleFile(fileptr, fileName);
     Py_Finalize();
     fclose(fileptr);
-    printf("success");
+    
+    printf("success\n");
     return;
 }
