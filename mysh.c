@@ -180,7 +180,6 @@ int buildIn(char** exec_args, int num_argv){
     if (strcmp(command, "cd") == 0){
         if(num_argv > 2){
             displayError();
-            free(path);
             return 2;
         }
         char* path;
