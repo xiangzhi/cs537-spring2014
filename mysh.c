@@ -112,13 +112,14 @@ int execute(char* input){
 
 char** parseArgv(char* input){
     //count the number of arguments in the list;
-    int num_argv = 0;
+    printf("%s", input);
+    int num_argv = 2;
     char* ptr = input;
-    do{
-        num_argv++;
-        ptr = strchr(ptr, ' ');
-    }
-    while(ptr != NULL);
+    //do{
+        //num_argv++;
+        //ptr = strchr(ptr, ' ');
+    //}
+   // while(ptr != NULL);
     printf("arguments:%d", num_argv);
 
     char** list = (char**) malloc(sizeof(char*) * num_argv);
