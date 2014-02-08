@@ -9,8 +9,9 @@
 //function prototypes
 void displayError(void);
 char* prompt(void);
-int execute(char*);
-char** parseArgv(char*);
+int execute(char**, int);
+int parseArgv(char*, char***);
+
 
 int main(int argc, char* argv[]) {
     
@@ -27,14 +28,23 @@ int main(int argc, char* argv[]) {
         if(cmd == NULL){
             continue;
         }
+
+        //parse the input
+        char** exec_args;
+        int num_argv = parseArgv(cmd, &exec_args);
+
         //check whether we reach the quit phase
-        if (strcmp(cmd, "quit()") == 0) {
-            break;
+        if (strcmp(exec_args[0], "exit") == 0) {
+            free(exec_args);
+            exit(0);
         }
-        execute(cmd);
+
+        execute(exec_args, num_argv);
+        free(exec_args);
     }
-    printf("quitting\n");
-    return 0;
+    //this is an infinite loop
+    displayError();
+    return 1;
 }
 
 //display same error
@@ -80,7 +90,7 @@ char* prompt() {
 /*
  * function that deal with execution of function
  */
-int execute(char* input){
+int execute(char** exec_args, int num_argv){
     //here we should parse the input and do something about it.
 
     //call fork
@@ -93,7 +103,6 @@ int execute(char* input){
 
     //this is the child
     if(rc == 0){
-        char** exec_args = parseArgv(input);
         //execvp should have never retunr
         execvp(exec_args[0], exec_args);
         //the command should never reach here
@@ -104,12 +113,11 @@ int execute(char* input){
     else{
         //wait untill anyone of the children finishs
         int wc = wait(NULL);
-        free(input);
         return 0;
     }
 }
 
-char** parseArgv(char* input){
+int parseArgv(char* input, char*** exec_args){
     //count the number of arguments in the list;
     char* pointer = (char*) malloc( strlen(input) * sizeof(char) );
     pointer = strncpy(pointer, input, strlen(input) * sizeof(char) );
@@ -130,7 +138,7 @@ char** parseArgv(char* input){
     }
 
     //allocate an array to store the arguments
-    char** list = (char**) malloc(sizeof(char*) * num_argvs);
+    char** list = (char**) malloc(sizeof(char*) * (num_argvs + 1));
 
     //copy the tokens into the string
     int index = 0;
@@ -142,7 +150,11 @@ char** parseArgv(char* input){
         index++;
         token = strtok(NULL, " ");
     }
+    //the last argument is a NULL
+    list[index] = NULL;
+    index++;
 
     free(pointer);
-    return list;
+    *exec_args = list;
+    return index;
 }
