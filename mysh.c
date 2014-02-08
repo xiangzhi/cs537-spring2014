@@ -95,7 +95,6 @@ int execute(char* input){
     if(rc == 0){
 
         char** exec_args = parseArgv(input);
-
         //execvp should have never retunr
         execvp(exec_args[0], exec_args);
         //the command should never reach here
@@ -112,18 +111,36 @@ int execute(char* input){
 
 char** parseArgv(char* input){
     //count the number of arguments in the list;
-    printf("%s", input);
-    int num_argv = 2;
-    char* ptr = input;
-    //do{
-        //num_argv++;
-        //ptr = strchr(ptr, ' ');
-    //}
-   // while(ptr != NULL);
-    printf("arguments:%d", num_argv);
+    char* pointer = (char*) malloc( strlen(input) * sizeof(char) );
+    pointer = strncpy(pointer, input, strlen(input) * sizeof(char) );
+    //probably memory problem
+    if(pointer == NULL){
+        displayError();
+        exit(1);
+    }
 
-    char** list = (char**) malloc(sizeof(char*) * num_argv);
-    list[0] = "ls";
-    list[1] = NULL;
+    //get how many arguments are in the input
+    int num_argvs = 0;
+    char* token = NULL;
+    token = strtok(pointer, " ");
+    while(token != NULL)
+    {
+        num_argvs++;
+        token = strtok(NULL, " ");
+    }
+
+    //allocate an array to store the arguments
+    char** list = (char**) malloc(sizeof(char*) * num_argvs);
+
+    //copy the tokens into the string
+    int index = 0;
+    token = NULL;
+    token = strtok(input, " ");
+    while(token != NULL)
+    {
+        list[index] = token;
+        index++;
+        token = strtok(NULL, " ");
+    }
     return list;
 }
