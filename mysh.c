@@ -9,6 +9,8 @@
 //function prototypes
 void displayError(void);
 char* prompt(void);
+int execute(char*);
+char** parseArgv(char*);
 
 int main(int argc, char* argv[]) {
     
@@ -26,9 +28,10 @@ int main(int argc, char* argv[]) {
             continue;
         }
         //check whether we reach the quit phase
-        if (strcmp(cmd, "quit()\n") == 0) {
+        if (strcmp(cmd, "quit()") == 0) {
             break;
         }
+        execute(cmd);
     }
     printf("quitting\n");
     return 0;
@@ -61,6 +64,65 @@ char* prompt() {
     }
     //replace new_line with terminate string
     *new_line = '\0';
-
+    //remove the empty string infront of the first character
+    while(*input == ' '){
+        input += sizeof(char);
+        //this means all the input was white space
+        //there is no command,  so we return null
+        //and skip to the next prompt
+        if(*input == '\0'){
+            return NULL;
+        }
+    }
     return input;
+}
+
+/*
+ * function that deal with execution of function
+ */
+int execute(char* input){
+    //here we should parse the input and do something about it.
+
+    //call fork
+    int rc  = fork();
+    //check whether fork was succesful
+    if(rc < 0){
+        displayError();
+        exit(1);
+    }
+
+    //this is the child
+    if(rc == 0){
+
+        char** exec_args = parseArgv(input);
+
+        //execvp should have never retunr
+        execvp(exec_args[0], exec_args);
+        //the command should never reach here
+        displayError();
+        return 1;
+    }
+    //this is the parent
+    else{
+        //wait untill anyone of the children finishs
+        int wc = wait(NULL);
+        return 0;
+    }
+}
+
+char** parseArgv(char* input){
+    //count the number of arguments in the list;
+    int num_argv = 0;
+    char* ptr = input;
+    do{
+        num_argv++;
+        ptr = strchr(ptr, ' ');
+    }
+    while(ptr != NULL);
+    printf("arguments:%d", num_argv);
+
+    char** list = (char**) malloc(sizeof(char*) * num_argv);
+    list[0] = "ls";
+    list[1] = NULL;
+    return list;
 }
