@@ -3,6 +3,8 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <Python/Python.h>
 //max size is 514 because 512 character + '\n' + '\0'
 #define MAX_SIZE 514
 
@@ -12,6 +14,8 @@ char* prompt(void);
 int execute(char**, int);
 int parseArgv(char*, char***);
 int buildIn(char**, int);
+void execPython(char*);
+void redirectOutput(char*);
 
 
 int main(int argc, char* argv[]) {
@@ -148,7 +152,6 @@ int parseArgv(char* input, char*** exec_args){
     while(token != NULL)
     {
         list[index] = token;
-        if(token)
         index++;
         token = strtok(NULL, " ");
     }
@@ -204,4 +207,34 @@ int buildIn(char** exec_args, int num_argv){
     }
 
     return 1;
+}
+
+void redirectOutput(char* fileName) {
+    int close_rc = close(STDOUT_FILENO);
+    
+    if (close_rc < 0) {
+        displayError();
+        exit(1);
+    }
+    
+    int fd = open(fileName, O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
+    
+    if (fd < 0) {
+        displayError();
+        exit(1);
+    }
+}
+
+void execPython(char* fileName) {
+    FILE* fileptr = fopen(fileName, "rb");
+    if (fileptr == NULL) {
+        printf("script could not be found %s", fileName);
+        exit(1);
+    }
+    Py_Initialize();
+    PyRun_SimpleFile(fileptr, fileName);
+    Py_Finalize();
+    fclose(fileptr);
+    printf("success");
+    return;
 }
