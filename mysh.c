@@ -93,18 +93,18 @@ int execute(char* input){
 
     //this is the child
     if(rc == 0){
-
         char** exec_args = parseArgv(input);
         //execvp should have never retunr
         execvp(exec_args[0], exec_args);
         //the command should never reach here
         displayError();
-        return 1;
+        exit(1);
     }
     //this is the parent
     else{
         //wait untill anyone of the children finishs
         int wc = wait(NULL);
+        free(input);
         return 0;
     }
 }
@@ -142,5 +142,7 @@ char** parseArgv(char* input){
         index++;
         token = strtok(NULL, " ");
     }
+
+    free(pointer);
     return list;
 }
