@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <Python/Python.h>
+#include "lib.h"
 //max size is 514 because 512 character + '\n' + '\0'
 #define MAX_SIZE 514
 
@@ -15,7 +16,13 @@ int execute(char**, int);
 int parseArgv(char*, char***);
 int buildIn(char**, int);
 void execPython(char*);
-void redirectOutput(char*);
+void redirectOutput(void);
+void setOutput(void);
+void closeOutput(void);
+
+int redirectFlag;
+char* redirectFileName;
+int output_fd;
 
 
 int main(int argc, char* argv[]) {
@@ -29,17 +36,26 @@ int main(int argc, char* argv[]) {
     
     while (1) {
         char* cmd = prompt();
+
         //check whether prompt was successful
         if(cmd == NULL){
             continue;
         }
 
+        //restart flgs
+        redirectFlag = -1;
+
         //parse the input
         char** exec_args;
         int num_argv = parseArgv(cmd, &exec_args);
-
+        if(num_argv == -1){
+            continue;
+        }
+        //change the STDIO if needed
+        setOutput();
         int check = buildIn(exec_args, num_argv);
         if(check == 0 || check == 2){
+            closeOutput();
             free(exec_args);
             continue;
         }
@@ -96,8 +112,9 @@ char* prompt() {
  * function that deal with execution of function
  */
 int execute(char** exec_args, int num_argv){
-    //here we should parse the input and do something about it.
 
+    //close the open file
+    closeOutput();
     //call fork
     int rc  = fork();
     //check whether fork was succesful
@@ -108,6 +125,9 @@ int execute(char** exec_args, int num_argv){
 
     //this is the child
     if(rc == 0){
+        if(redirectFlag == 1){
+            redirectOutput();
+        }
         //execvp should have never retunr
         execvp(exec_args[0], exec_args);
         //the command should never reach here
@@ -155,8 +175,69 @@ int parseArgv(char* input, char*** exec_args){
         index++;
         token = strtok(NULL, " ");
     }
+    
+    //check for the redirect flag
+    for(int i = 0; i < index; i++){
+        char* word = list[i];
+        int char_index = indexOf(word, '>');
+        if(char_index != -1){
+            if(redirectFlag == 1){
+                displayError();
+                return -1;
+            }
+
+            //case zero the > is by itself
+            if(strlen(word) == 1){
+                redirectFileName = list[i+1];
+                //remove twice
+                arrayRemove(&list, index, i + 1);
+                arrayRemove(&list, index, i);
+                index -= 2;
+                i -= 2;
+            }
+            //first case, the < starts the fileName -> ls >text.txt
+            else if(char_index == 0 ){
+                redirectFileName = substring(word,1, strlen(word));
+
+                //remove the fileName from the list
+                arrayRemove(&list, index, i);
+                index--;
+                i--;
+            }
+            //second case,  where < is at the end -> ls> text.txt
+            else if(char_index == (strlen(word) - 1) ){
+
+                //if the > exsist in the end without a file Name
+                if((i + 1) == index){
+                    displayError();
+                    return -1;
+                }
+
+                list[i] = substring(word, 0, strlen(word) -1);
+                redirectFileName = list[i + 1];
+
+                //remove the fileName from the list
+                arrayRemove(&list, index, i+1);
+                index--;
+                i--;
+            }
+            //last case,  where  > is in the middle
+            else{
+                list[i] = substring(word, 0, char_index);
+                redirectFileName = substring(word, char_index + 1, strlen(word));
+            }
+            redirectFlag = 1;
+            printf("filename:%s\n", redirectFileName);
+        }
+    }
+
     //the last argument is a NULL
     list[index] = NULL;
+
+    //debuging to see what command is left in the system;
+    for(int i = 0; i < index; i++){
+        printf("%s\n",list[i]);
+    }
 
     free(pointer);
     *exec_args = list;
@@ -174,8 +255,8 @@ int buildIn(char** exec_args, int num_argv){
     //check for pwd
     if (strcmp(command, "pwd") == 0) {
         char* path = getcwd(NULL, 0);
-        write(STDIN_FILENO, path, strlen(path));
-        write(STDIN_FILENO, "\n", 1);
+        write(output_fd, path, strlen(path));
+        write(output_fd, "\n", 1);
         free(path);
         return 0;
     }
@@ -199,26 +280,40 @@ int buildIn(char** exec_args, int num_argv){
         //try change directories
         if(chdir(path) != 0){
             displayError();
-            free(path);
             return 2;
         }
-        free(path);
         return 0;
     }
 
     return 1;
 }
 
-void redirectOutput(char* fileName) {
+void setOutput(void){
+    if(redirectFlag == 1){
+        output_fd = open(redirectFileName, 
+            O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
+    }
+    else{
+        output_fd = STDIN_FILENO;
+    }
+}
+
+void closeOutput(void){
+    if(redirectFlag == 1){
+        close(output_fd);
+        output_fd = STDIN_FILENO;
+    }
+}
+
+void redirectOutput() {
     int close_rc = close(STDOUT_FILENO);
-    
     if (close_rc < 0) {
         displayError();
         exit(1);
     }
-    
-    int fd = open(fileName, O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
-    
+
+    int fd = open(redirectFileName, O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
+    printf("fd:%d\n",fd);
     if (fd < 0) {
         displayError();
         exit(1);
