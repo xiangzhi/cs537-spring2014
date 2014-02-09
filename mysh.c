@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
         }
 
         check = execute(exec_args, num_argv);
-        free(exec_args);
+        //free(exec_args);
     }
     //this is an infinite loop
     displayError();
@@ -114,6 +114,15 @@ int execute(char** exec_args, int num_argv){
 
     //close the open file
     closeOutput();
+    int waitFlag = 0;
+
+    //check whether the last argument is a &
+    if(strcmp(exec_args[num_argv -1], "&") == 0 &&
+     strlen(exec_args[num_argv -1]) == 1){
+        waitFlag = 1;
+        arrayRemove(&exec_args, num_argv, num_argv-1);
+    }
+
     //call fork
     int rc  = fork();
     //check whether fork was succesful
@@ -136,7 +145,9 @@ int execute(char** exec_args, int num_argv){
     //this is the parent
     else{
         //wait untill anyone of the children finishs
-        int wc = wait(NULL);
+        if(waitFlag == 0){
+            int wc = wait(NULL);
+        }
         return 0;
     }
 }
@@ -234,10 +245,12 @@ int parseArgv(char* input, char*** exec_args){
     list[index] = NULL;
 
     //debuging to see what command is left in the system;
+    /*
     for(int i = 0; i < index; i++){
         printf("%s\n",list[i]);
     }
-
+    */
+    
     free(pointer);
     *exec_args = list;
     return index;
