@@ -316,11 +316,7 @@ int buildIn(char** exec_args, int num_argv){
 
     //whether is wait or not
     if (strcmp(command, "wait") == 0) {
-        int wc = wait(NULL);
-        if(wc == -1){
-            displayError();
-            exit(1);
-        }
+        wait(NULL);
         return 0;
     }
     
