@@ -286,6 +286,10 @@ int parseArgv(char* input, char*** exec_args){
             else if(char_index == 0 ){
                 redirectFileName = substring(word,1, strlen(word));
 
+                if(i != index - 1){
+                    displayError();
+                    return -1;
+                }
                 //remove the fileName from the list
                 arrayRemove(&list, index, i);
                 index--;
@@ -295,7 +299,7 @@ int parseArgv(char* input, char*** exec_args){
             else if(char_index == (strlen(word) - 1) ){
 
                 //if the > exsist in the end without a file Name
-                if((i + 1) == index){
+                if((i + 1) == index || (i + 1) != (index - 1)){
                     displayError();
                     return -1;
                 }
@@ -310,7 +314,12 @@ int parseArgv(char* input, char*** exec_args){
             }
             //last case,  where  > is in the middle
             else{
+                if( (i + 1) != (index - 1) ){
+                    displayError();
+                    return -1;
+                }
                 list[i] = substring(word, 0, char_index);
+
                 redirectFileName = substring(word, char_index + 1, strlen(word));
             }
             redirectFlag = 1;
