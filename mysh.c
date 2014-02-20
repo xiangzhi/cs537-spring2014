@@ -275,6 +275,10 @@ int parseArgv(char* input, char*** exec_args){
 
             //case zero the > is by itself
             if(strlen(word) == 1){
+                if( (i + 1) != (index - 1) ){
+                    displayError();
+                    return -1;
+                }
                 redirectFileName = list[i+1];
                 //remove twice
                 arrayRemove(&list, index, i + 1);
@@ -314,7 +318,7 @@ int parseArgv(char* input, char*** exec_args){
             }
             //last case,  where  > is in the middle
             else{
-                if( (i + 1) != (index - 1) ){
+                if( (i + 1) != index ){
                     displayError();
                     return -1;
                 }
