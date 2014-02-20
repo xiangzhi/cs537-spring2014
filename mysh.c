@@ -22,6 +22,9 @@ void closeOutput(void);
 
 int execute(char* cmd);
 
+//declaration to fight erros
+pid_t wait(int *stat_loc);
+
 int redirectFlag;
 char* redirectFileName;
 int output_fd;
