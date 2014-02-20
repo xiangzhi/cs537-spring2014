@@ -42,16 +42,26 @@ void usage(){
 int main(int argc, char* argv[]) {
     
     // Starting mysh program with incorrect number of arguments
-    if (argc < 1 || argc > 2) {
+    if (argc < 1 || argc > 3) {
         usage();
     }
     
     input = malloc(MAX_SIZE);
 
     //batch mode
-    if(argc == 2){
+    if(argc == 2 || argc == 3){
         FILE *input_fd;
-        char* inputName = argv[1];
+        char* inputName;
+        if(argc == 2){
+            inputName = argv[1];
+        }
+        else if(argc == 3 && (strcmp(argv[1],"<") == 0)){
+            inputName = argv[2];
+        }
+        else{
+            displayError();
+            exit(1);
+        }
         // open the input file
         input_fd = fopen(inputName,"r");
         // check whther the input file has open correctly
