@@ -14,8 +14,8 @@ char* substring(char* input, int start, int end){
     int input_size = strlen(input);
     char* ptr = newStr;
     char* input_ptr = input;
-
-    for(int i = 0; i < input_size; i ++){
+    int i;
+    for(i = 0; i < input_size; i ++){
         if(i >= start && i < end){
             *ptr = *input_ptr;
             ptr += sizeof(char);
@@ -28,7 +28,8 @@ char* substring(char* input, int start, int end){
 
 int indexOf(char* input, char _char){
     char* ptr = input;
-    for(int i = 0; i < strlen(input); i++){
+    int i;
+    for(i = 0; i < strlen(input); i++){
         if(*ptr == _char){
             return i;
         }
@@ -46,7 +47,8 @@ int arrayRemove(char*** _array, int size, int position){
     char** array = *_array;
     char** newArray = (char**) malloc (sizeof(char**) * (size-1));
     char** ptr = newArray;
-    for(int i = 0; i < size; i++){
+    int i;
+    for(i = 0; i < size; i++){
         if(i == position){
             continue;
         }

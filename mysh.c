@@ -12,7 +12,7 @@
 //function prototypes
 void displayError(void);
 char* prompt(void);
-int execute(char**, int);
+int runCommand(char**, int);
 int parseArgv(char*, char***);
 int buildIn(char**, int);
 void execPython(char*, int, char**);
@@ -20,47 +20,62 @@ void redirectOutput(void);
 void setOutput(void);
 void closeOutput(void);
 
+int execute(char* cmd);
+
 int redirectFlag;
 char* redirectFileName;
 int output_fd;
 
+void usage(){
+    displayError();
+    exit(1);
+}
+
 int main(int argc, char* argv[]) {
     
     // Starting mysh program with incorrect number of arguments
-    if (argc > 2) {
-        printf("%d\n", argc);
-        displayError();
-        exit(1);
+    if (argc < 1 || argc > 2) {
+        usage();
     }
-    
-    while (1) {
-        char* cmd = prompt();
 
-        //check whether prompt was successful
-        if(cmd == NULL){
-            continue;
+    //batch mode
+    if(argc == 2){
+        FILE *input_fd;
+        char* inputName = argv[1];
+        // open the input file
+        input_fd = fopen(inputName,"r");
+        // check whther the input file has open correctly
+        if (input_fd < 0){
+            fprintf(stderr, "Error: Cannot open file %s\n", inputName);
+            exit(1);
         }
 
-        //restart flgs
-        redirectFlag = -1;
-
-        //parse the input
-        char** exec_args;
-        int num_argv = parseArgv(cmd, &exec_args);
-        if(num_argv == -1){
-            continue;
+        char* cmd = (char*) malloc(MAX_SIZE);
+        cmd = fgets(cmd, MAX_SIZE, input_fd);
+        while(cmd != NULL)
+        {
+            if(cmd[strlen(cmd)-1] == '\n'){
+                cmd[strlen(cmd)-1] = '\0';
+            }
+            write(STDOUT_FILENO, cmd, strlen(cmd));
+            execute(cmd);
+            cmd = fgets(cmd, MAX_SIZE, input_fd);
         }
-        //change the STDIO if needed
-        setOutput();
-        int check = buildIn(exec_args, num_argv);
-        if(check == 0 || check == 2){
-            closeOutput();
-            free(exec_args);
-            continue;
-        }
+        //finish execution done;
+        return 0;
+    }
+    else{
+        while (1) {
+            char* cmd = prompt();
 
-        check = execute(exec_args, num_argv);
-        //free(exec_args);
+            //check whether prompt was successful
+            if(cmd == NULL){
+                continue;
+            }
+            //restart flgs
+            redirectFlag = -1;
+            execute(cmd);
+        }
     }
     //this is an infinite loop
     displayError();
@@ -107,10 +122,32 @@ char* prompt() {
     return input;
 }
 
+int execute(char* cmd){
+    //parse the input
+    char** exec_args;
+    int num_argv = parseArgv(cmd, &exec_args);
+    if(num_argv == -1){
+        return 1;
+    }
+    //change the STDIO if needed
+    setOutput();
+    int check = buildIn(exec_args, num_argv);
+    if(check == 0 || check == 2){
+        closeOutput();
+        free(exec_args);
+        return 1;
+    }
+
+    check = runCommand(exec_args, num_argv);
+    //free(exec_args);
+    return 0;
+}
+
+
 /*
  * function that deal with execution of function
  */
-int execute(char** exec_args, int num_argv){
+int runCommand(char** exec_args, int num_argv){
 
     //close the open file
     closeOutput();
@@ -147,6 +184,10 @@ int execute(char** exec_args, int num_argv){
         //wait untill anyone of the children finishs
         if(waitFlag == 0){
             int wc = wait(NULL);
+            if(wc == -1){
+                displayError();
+                exit(1);
+            }
         }
         return 0;
     }
@@ -187,7 +228,8 @@ int parseArgv(char* input, char*** exec_args){
     }
     
     //check for the redirect flag
-    for(int i = 0; i < index; i++){
+    int i;
+    for(i = 0; i < index; i++){
         char* word = list[i];
         int char_index = indexOf(word, '>');
         if(char_index != -1){
@@ -246,7 +288,7 @@ int parseArgv(char* input, char*** exec_args){
 
     //debuging to see what command is left in the system;
     /*
-    for(int i = 0; i < index; i++){
+    for(i= 0; i < index; i++){
         printf("%s\n",list[i]);
     }
     */
@@ -267,7 +309,6 @@ int buildIn(char** exec_args, int num_argv){
     
     // Check for .py substring
     if (strstr(command, ".py") != NULL) {
-        printf("Running Python");
         execPython(command, num_argv, exec_args);
         return 0;
     }
@@ -342,19 +383,35 @@ void redirectOutput() {
 }
 
 void execPython(char* fileName, int argc, char* argv[]) {
-    FILE* fileptr = fopen(fileName, "rb");
-    if (fileptr == NULL) {
-        printf("script could not be found %s", fileName);
+
+    //call fork
+    int rc  = fork();
+    //check whether fork was succesful
+    if(rc < 0){
+        displayError();
         exit(1);
     }
-    
-    Py_SetProgramName(fileName);
-    Py_Initialize();
-    PySys_SetArgv(argc, argv);
-    PyRun_SimpleFile(fileptr, fileName);
-    Py_Finalize();
-    fclose(fileptr);
-    
-    printf("success\n");
-    return;
+
+    if(rc == 0){
+        FILE* fileptr = fopen(fileName, "rb");
+        if (fileptr == NULL) {
+            printf("script could not be found %s", fileName);
+            exit(1);
+        }
+        Py_SetProgramName(fileName);
+        Py_Initialize();
+        PySys_SetArgv(argc, argv);
+        PyRun_SimpleFile(fileptr, fileName);
+        Py_Finalize();
+        fclose(fileptr);
+        exit(0);
+    }
+    else{
+        int wc = wait(NULL);
+        if(wc == -1){
+            displayError();
+            exit(1);
+        }
+        return;
+    }
 }
