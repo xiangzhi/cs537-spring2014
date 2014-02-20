@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <python2.6/Python.h>
 #include "lib.h"
+#include <sys/wait.h>
+#include <signal.h>
 //max size is 514 because 512 character + '\n' + '\0'
 #define MAX_SIZE 514
 
@@ -28,6 +30,8 @@ pid_t wait(int *stat_loc);
 int redirectFlag;
 char* redirectFileName;
 int output_fd;
+
+
 
 void usage(){
     displayError();
@@ -176,6 +180,7 @@ int runCommand(char** exec_args, int num_argv){
         if(redirectFlag == 1){
             redirectOutput();
         }
+
         //execvp should have never retunr
         execvp(exec_args[0], exec_args);
         //the command should never reach here
@@ -184,14 +189,6 @@ int runCommand(char** exec_args, int num_argv){
     }
     //this is the parent
     else{
-        //wait untill anyone of the children finishs
-        if(waitFlag == 0){
-            int wc = wait(NULL);
-            if(wc == -1){
-                displayError();
-                exit(1);
-            }
-        }
         return 0;
     }
 }
@@ -308,6 +305,16 @@ int buildIn(char** exec_args, int num_argv){
     if (strcmp(command, "exit") == 0) {
         free(exec_args);
         exit(0);
+    }
+
+    //whether is wait or not
+    if (strcmp(command, "wait") == 0) {
+        int wc = wait(NULL);
+        if(wc == -1){
+            displayError();
+            exit(1);
+        }
+        return 0;
     }
     
     // Check for .py substring
