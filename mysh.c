@@ -31,6 +31,7 @@ int redirectFlag;
 char* redirectFileName;
 int output_fd;
 int waitFlag;
+char* input;
 
 
 void usage(){
@@ -44,6 +45,8 @@ int main(int argc, char* argv[]) {
     if (argc < 1 || argc > 2) {
         usage();
     }
+    
+    input = malloc(MAX_SIZE);
 
     //batch mode
     if(argc == 2){
@@ -52,21 +55,32 @@ int main(int argc, char* argv[]) {
         // open the input file
         input_fd = fopen(inputName,"r");
         // check whther the input file has open correctly
-        if (input_fd < 0){
-            fprintf(stderr, "Error: Cannot open file %s\n", inputName);
+        if (input_fd == NULL){
+		
+            displayError();
             exit(1);
         }
 
-        char* cmd = (char*) malloc(MAX_SIZE);
-        cmd = fgets(cmd, MAX_SIZE, input_fd);
-        while(cmd != NULL)
-        {
-            write(STDOUT_FILENO, cmd, strlen(cmd));
-            if(cmd[strlen(cmd)-1] == '\n'){
-                cmd[strlen(cmd)-1] = '\0';
+        input = fgets(input, MAX_SIZE, input_fd);
+        while(input != NULL) {
+		
+	char* new_line = strchr(input, '\n');
+    //means newline is not in the string
+    //which implies the string is longer than 512
+    if(new_line == NULL){
+	int c;
+	while ((c = getchar()) != '\n' && c != EOF);
+        displayError();
+	input = fgets(input, MAX_SIZE, input_fd);
+        continue;
+    }
+            write(STDOUT_FILENO, input, strlen(input));
+	 //find first instance of '\n'
+            if(input[strlen(input)-1] == '\n'){
+                input[strlen(input)-1] = '\0';
             }
-            execute(cmd);
-            cmd = fgets(cmd, MAX_SIZE, input_fd);
+            execute(input);
+            input = fgets(input, MAX_SIZE, input_fd);
         }
         //finish execution done;
         return 0;
@@ -96,7 +110,7 @@ void displayError(){
 
 // Prompts and retreives and returns user input
 char* prompt() {
-    char* input = (char*) malloc(MAX_SIZE);
+
     printf("mysh>");
     //get the input from STDIN
     input = fgets(input, MAX_SIZE, stdin);
@@ -105,11 +119,14 @@ char* prompt() {
         displayError();
         return NULL;
     }
+	
     //find first instance of '\n'
     char* new_line = strchr(input, '\n');
     //means newline is not in the string
     //which implies the string is longer than 512
     if(new_line == NULL){
+	int c;
+	while ((c = getchar()) != '\n' && c != EOF);
         displayError();
         return NULL;
     }
@@ -337,7 +354,7 @@ int buildIn(char** exec_args, int num_argv){
     
     //check for pwd
     if (strcmp(command, "pwd") == 0) {
-        char* path = getcwd(NULL, 0);
+        char* path = getcwd(NULL, 0);;
         write(output_fd, path, strlen(path));
         write(output_fd, "\n", 1);
         free(path);
@@ -377,7 +394,7 @@ void setOutput(void){
             O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
     }
     else{
-        output_fd = STDIN_FILENO;
+        output_fd = STDOUT_FILENO;
     }
 }
 
