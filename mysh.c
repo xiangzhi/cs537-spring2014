@@ -30,7 +30,7 @@ pid_t wait(int *stat_loc);
 int redirectFlag;
 char* redirectFileName;
 int output_fd;
-int waitFlag = 0;
+int waitFlag;
 
 
 void usage(){
@@ -79,8 +79,7 @@ int main(int argc, char* argv[]) {
             if(cmd == NULL){
                 continue;
             }
-            //restart flgs
-            redirectFlag = -1;
+            
             execute(cmd);
         }
     }
@@ -130,8 +129,11 @@ char* prompt() {
 }
 
 int execute(char* cmd){
-    //parse the input
+    //reset flags
     waitFlag = 0;
+    redirectFlag = -1;
+
+    //parse inputs;
     char** exec_args;
     int num_argv = parseArgv(cmd, &exec_args);
     if(num_argv == -1){
@@ -145,7 +147,6 @@ int execute(char* cmd){
         free(exec_args);
         return 1;
     }
-
     check = runCommand(exec_args, num_argv);
     //free(exec_args);
     return 0;
@@ -168,10 +169,11 @@ int runCommand(char** exec_args, int num_argv){
 
     //this is the child
     if(rc == 0){
+
         if(redirectFlag == 1){
+            //write(STDOUT_FILENO, "test", strlen("test"));
             redirectOutput();
         }
-
         //execvp should have never retunr
         execvp(exec_args[0], exec_args);
         //the command should never reach here
@@ -181,12 +183,14 @@ int runCommand(char** exec_args, int num_argv){
     //this is the parent
     else{
         if(waitFlag == 0){
+            //write(STDOUT_FILENO, "wait", strlen("wait"));
             int wc = wait(NULL);
             if(wc == -1){
                 displayError();
                 exit(1);
             }
         }
+        //write(STDOUT_FILENO, "here?", strlen("here?"));
         return 0;
     }
 }
@@ -392,7 +396,7 @@ void redirectOutput() {
     }
 
     int fd = open(redirectFileName, O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
-    //printf("fd:%d\n",fd);
+    printf("fd:%d\n",fd);
     if (fd < 0) {
         displayError();
         exit(1);
