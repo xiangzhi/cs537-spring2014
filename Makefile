@@ -17,3 +17,6 @@ cachesim: lib.c
 cache: mysh.c
 			$(CC) -c -o mysh.o mysh.c $(CFLAGS)
 
+clean :
+	rm mysh *.o
+
