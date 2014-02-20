@@ -63,18 +63,21 @@ int main(int argc, char* argv[]) {
 
         input = fgets(input, MAX_SIZE, input_fd);
         while(input != NULL) {
-		
+	  write(STDOUT_FILENO, input, strlen(input));
+	
 	char* new_line = strchr(input, '\n');
+	
     //means newline is not in the string
     //which implies the string is longer than 512
     if(new_line == NULL){
+	write(STDOUT_FILENO, "\n", 1);
 	int c;
-	while ((c = getchar()) != '\n' && c != EOF);
+	while ((c = getc(input_fd)) != '\n' && c != EOF);
         displayError();
 	input = fgets(input, MAX_SIZE, input_fd);
         continue;
     }
-            write(STDOUT_FILENO, input, strlen(input));
+          
 	 //find first instance of '\n'
             if(input[strlen(input)-1] == '\n'){
                 input[strlen(input)-1] = '\0';
@@ -335,12 +338,20 @@ int buildIn(char** exec_args, int num_argv){
 
     //check whether we reach the quit phase
     if (strcmp(command, "exit") == 0) {
+	if (num_argv != 1) {
+		displayError();
+		return 0;
+	}
         free(exec_args);
         exit(0);
     }
 
     //whether is wait or not
     if (strcmp(command, "wait") == 0) {
+	if (num_argv != 1) {
+		displayError();
+		return 0;
+	}
         wait(NULL);
         return 0;
     }
@@ -354,6 +365,10 @@ int buildIn(char** exec_args, int num_argv){
     
     //check for pwd
     if (strcmp(command, "pwd") == 0) {
+	if (num_argv != 1) {
+		displayError();
+		return 0;
+	}
         char* path = getcwd(NULL, 0);;
         write(output_fd, path, strlen(path));
         write(output_fd, "\n", 1);
@@ -362,7 +377,7 @@ int buildIn(char** exec_args, int num_argv){
     }
     //check for cd
     if (strcmp(command, "cd") == 0){
-        if(num_argv > 2){
+        if(num_argv > 2 || num_argv < 1){
             displayError();
             return 2;
         }
