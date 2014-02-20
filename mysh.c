@@ -189,7 +189,6 @@ int runCommand(char** exec_args, int num_argv){
     }
     //this is the parent
     else{
-        return 0;
         if(waitFlag == 0){
             int wc = wait(NULL);
             if(wc == -1){
@@ -197,6 +196,7 @@ int runCommand(char** exec_args, int num_argv){
                 exit(1);
             }
         }
+        return 0;
     }
 }
 
