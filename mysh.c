@@ -57,10 +57,10 @@ int main(int argc, char* argv[]) {
         cmd = fgets(cmd, MAX_SIZE, input_fd);
         while(cmd != NULL)
         {
+            write(STDOUT_FILENO, cmd, strlen(cmd));
             if(cmd[strlen(cmd)-1] == '\n'){
                 cmd[strlen(cmd)-1] = '\0';
             }
-            write(STDOUT_FILENO, cmd, strlen(cmd));
             execute(cmd);
             cmd = fgets(cmd, MAX_SIZE, input_fd);
         }
