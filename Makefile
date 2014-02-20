@@ -2,7 +2,8 @@
 
 C     = gcc
 CFLAGS = -O -Wall
-PYTHON = -lpython2.6
+PYTHON = -lpython2.6 -L /usr/lib/python2.6
+PYTHONINCLUDE = -I /usr/include/python2.6
 
 # argument CFLAGS is missing.  Place it here.
 
@@ -11,12 +12,12 @@ PYTHON = -lpython2.6
 all: lib.o mysh.o
 	$(CC) $(CFLAGS) -o mysh mysh.o lib.o $(PYTHON)
 
-cachesim: lib.c
-			$(CC) -c -o lib.o lib.c $(CFLAGS)
+lib: lib.c
+	$(CC) -c -o lib.o lib.c $(CFLAGS)
 
-cache: mysh.c
-			$(CC) -c -o mysh.o mysh.c $(CFLAGS)
+mysh: mysh.c
+	$(CC) -c -o mysh.o mysh.c $(CFLAGS) $(PYTHONINCLUDE)
 
-clean :
+clean:
 	rm mysh *.o
 

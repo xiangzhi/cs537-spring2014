@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <Python/Python.h>
+#include <python2.6/Python.h>
 #include "lib.h"
 //max size is 514 because 512 character + '\n' + '\0'
 #define MAX_SIZE 514
