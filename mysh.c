@@ -190,6 +190,13 @@ int runCommand(char** exec_args, int num_argv){
     //this is the parent
     else{
         return 0;
+        if(waitFlag == 0){
+            int wc = wait(NULL);
+            if(wc == -1){
+                displayError();
+                exit(1);
+            }
+        }
     }
 }
 
@@ -279,7 +286,7 @@ int parseArgv(char* input, char*** exec_args){
                 redirectFileName = substring(word, char_index + 1, strlen(word));
             }
             redirectFlag = 1;
-            printf("filename:%s\n", redirectFileName);
+            //printf("filename:%s\n", redirectFileName);
         }
     }
 
@@ -385,7 +392,7 @@ void redirectOutput() {
     }
 
     int fd = open(redirectFileName, O_RDWR | O_TRUNC | O_CREAT, S_IRWXU);
-    printf("fd:%d\n",fd);
+    //printf("fd:%d\n",fd);
     if (fd < 0) {
         displayError();
         exit(1);
