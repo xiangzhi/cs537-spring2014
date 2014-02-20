@@ -30,7 +30,7 @@ pid_t wait(int *stat_loc);
 int redirectFlag;
 char* redirectFileName;
 int output_fd;
-
+int waitFlag = 0;
 
 
 void usage(){
@@ -131,6 +131,7 @@ char* prompt() {
 
 int execute(char* cmd){
     //parse the input
+    waitFlag = 0;
     char** exec_args;
     int num_argv = parseArgv(cmd, &exec_args);
     if(num_argv == -1){
@@ -149,8 +150,6 @@ int execute(char* cmd){
     //free(exec_args);
     return 0;
 }
-
-
 /*
  * function that deal with execution of function
  */
@@ -158,14 +157,6 @@ int runCommand(char** exec_args, int num_argv){
 
     //close the open file
     closeOutput();
-    int waitFlag = 0;
-
-    //check whether the last argument is a &
-    if(strcmp(exec_args[num_argv -1], "&") == 0 &&
-     strlen(exec_args[num_argv -1]) == 1){
-        waitFlag = 1;
-        arrayRemove(&exec_args, num_argv, num_argv-1);
-    }
 
     //call fork
     int rc  = fork();
@@ -233,7 +224,20 @@ int parseArgv(char* input, char*** exec_args){
         index++;
         token = strtok(NULL, " ");
     }
-    
+
+    //check for waiting
+    //check if its by itself
+    if( strcmp(list[index-1],"&") == 0 && 
+        strlen(list[index-1]) == 1){
+        waitFlag = 1;
+        index--;
+    }
+
+    if(list[index-1][strlen(list[index-1]) -1 ] == '&'){
+        waitFlag = 1;
+        list[index-1][strlen(list[index-1]) -1 ] = '\0';
+    }
+
     //check for the redirect flag
     int i;
     for(i = 0; i < index; i++){
