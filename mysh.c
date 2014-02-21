@@ -378,7 +378,7 @@ int buildIn(char** exec_args, int num_argv){
 		displayError();
 		return 0;
 	}
-        wait(NULL);
+        while(wait(NULL) > 0);
         return 0;
     }
     
