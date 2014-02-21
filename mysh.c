@@ -112,7 +112,7 @@ void displayError(){
 
 // Prompts and retreives and returns user input
 char* prompt() {
-    char* msg = "mysh>";
+    char* msg = "mysh> ";
     write(STDOUT_FILENO, msg, strlen(msg));
     //get the input from STDIN
     input = fgets(input, MAX_SIZE, stdin);
