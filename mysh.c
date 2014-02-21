@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <python2.6/Python.h>
-#include "lib.h"
+#include "string_lib.h"
+#include "array_lib.h"
 #include <sys/wait.h>
 #include <signal.h>
 //max size is 514 because 512 character + '\n' + '\0'
@@ -42,26 +43,16 @@ void usage(){
 int main(int argc, char* argv[]) {
     
     // Starting mysh program with incorrect number of arguments
-    if (argc < 1 || argc > 3) {
+    if (argc < 1 || argc > 2) {
         usage();
     }
     
     input = malloc(MAX_SIZE);
 
     //batch mode
-    if(argc == 2 || argc == 3){
+    if(argc == 2 ){
         FILE *input_fd;
-        char* inputName;
-        if(argc == 2){
-            inputName = argv[1];
-        }
-        else if(argc == 3 && (strcmp(argv[1],"<") == 0)){
-            inputName = argv[2];
-        }
-        else{
-            displayError();
-            exit(1);
-        }
+        char* inputName = argv[1];
         // open the input file
         input_fd = fopen(inputName,"r");
         // check whther the input file has open correctly
@@ -73,22 +64,20 @@ int main(int argc, char* argv[]) {
 
         input = fgets(input, MAX_SIZE, input_fd);
         while(input != NULL) {
-	  write(STDOUT_FILENO, input, strlen(input));
+	       write(STDOUT_FILENO, input, strlen(input));
+	       char* new_line = strchr(input, '\n');
 	
-	char* new_line = strchr(input, '\n');
-	
-    //means newline is not in the string
-    //which implies the string is longer than 512
-    if(new_line == NULL){
-	write(STDOUT_FILENO, "\n", 1);
-	int c;
-	while ((c = getc(input_fd)) != '\n' && c != EOF);
-        displayError();
-	input = fgets(input, MAX_SIZE, input_fd);
-        continue;
-    }
-          
-	 //find first instance of '\n'
+            //means newline is not in the string
+            //which implies the string is longer than 512
+            if(new_line == NULL){
+	           write(STDOUT_FILENO, "\n", 1);
+	           int c;
+	           while ((c = getc(input_fd)) != '\n' && c != EOF);
+                displayError();
+	            input = fgets(input, MAX_SIZE, input_fd);
+                continue;
+            }
+	       //find first instance of '\n'
             if(input[strlen(input)-1] == '\n'){
                 input[strlen(input)-1] = '\0';
             }
@@ -101,13 +90,13 @@ int main(int argc, char* argv[]) {
     else{
         while (1) {
             char* cmd = prompt();
-
             //check whether prompt was successful
             if(cmd == NULL){
-                continue;
+                //continue;
             }
-            
-            execute(cmd);
+            else{
+                execute(cmd);
+            }
         }
     }
     //this is an infinite loop
@@ -123,28 +112,38 @@ void displayError(){
 
 // Prompts and retreives and returns user input
 char* prompt() {
-
-    printf("mysh>");
+    char* msg = "mysh>";
+    write(STDOUT_FILENO, msg, strlen(msg));
     //get the input from STDIN
     input = fgets(input, MAX_SIZE, stdin);
     //check whether fgets is successful
     if(input == NULL){
+
+        //check whether because it just reach end of file
+        if(feof(stdin) > 0){
+            exit(1);
+        }
+
         displayError();
         return NULL;
     }
-	
     //find first instance of '\n'
     char* new_line = strchr(input, '\n');
     //means newline is not in the string
     //which implies the string is longer than 512
-    if(new_line == NULL){
-	int c;
-	while ((c = getchar()) != '\n' && c != EOF);
-        displayError();
-        return NULL;
+    if(strlen(input) == MAX_SIZE && new_line == NULL){
+        char* _EOF = strchr(input, EOF);
+        if(_EOF == NULL){
+        	int c;
+        	while ((c = getchar()) != '\n' && c != EOF);
+                displayError();
+                return NULL;
+        }
     }
     //replace new_line with terminate string
-    *new_line = '\0';
+    if(new_line != NULL){
+        *new_line = '\0';
+    }
     //remove the empty string infront of the first character
     while(*input == ' '){
         input += sizeof(char);
@@ -155,6 +154,7 @@ char* prompt() {
             return NULL;
         }
     }
+
     return input;
 }
 
@@ -166,6 +166,7 @@ int execute(char* cmd){
     //parse inputs;
     char** exec_args;
     int num_argv = parseArgv(cmd, &exec_args);
+
     if(num_argv == -1){
         return 1;
     }
@@ -196,7 +197,6 @@ int runCommand(char** exec_args, int num_argv){
         displayError();
         exit(1);
     }
-
     //this is the child
     if(rc == 0){
 
@@ -226,6 +226,9 @@ int runCommand(char** exec_args, int num_argv){
 }
 
 int parseArgv(char* input, char*** exec_args){
+
+    int i;
+
     //count the number of arguments in the list;
     char* pointer = (char*) malloc( strlen(input) * sizeof(char) );
     pointer = strncpy(pointer, input, strlen(input) * sizeof(char) );
@@ -259,6 +262,7 @@ int parseArgv(char* input, char*** exec_args){
         token = strtok(NULL, " ");
     }
 
+
     //check for waiting
     //check if its by itself
     if( strcmp(list[index-1],"&") == 0 && 
@@ -273,7 +277,6 @@ int parseArgv(char* input, char*** exec_args){
     }
 
     //check for the redirect flag
-    int i;
     for(i = 0; i < index; i++){
         char* word = list[i];
         int char_index = indexOf(word, '>');
@@ -341,15 +344,15 @@ int parseArgv(char* input, char*** exec_args){
         }
     }
 
-    //the last argument is a NULL
-    list[index] = NULL;
-
     //debuging to see what command is left in the system;
     /*
     for(i= 0; i < index; i++){
-        printf("%s\n",list[i]);
+        printf("\n%d: %s\n",i, list[i]);
     }
     */
+
+    //the last argument is a NULL
+    list[index] = NULL;
     
     free(pointer);
     *exec_args = list;
