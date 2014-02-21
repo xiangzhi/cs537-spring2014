@@ -121,7 +121,7 @@ char* prompt() {
 
         //check whether because it just reach end of file
         if(feof(stdin) > 0){
-            exit(1);
+            exit(0);
         }
 
         displayError();
