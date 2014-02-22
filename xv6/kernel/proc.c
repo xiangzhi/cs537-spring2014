@@ -28,6 +28,7 @@ pinit(void)
   initlock(&ptable.lock, "ptable");
 }
 
+//the random generator
 unsigned int rand(unsigned int x) {
     x ^= x >> 11;
     x ^= x<<7 & 0x9D2C5680;
@@ -39,7 +40,7 @@ unsigned int rand(unsigned int x) {
 int settickets(int num) {
   //cprintf("Num: %d", num);
   int currentT = proc->numtickets;
-  if (num < 0) return -1;
+  if (num <= 0) return -1;
   int a;
   for (a = 0; a < num; a ++) {
     proc->tickets[currentT] = currentticket;
@@ -288,7 +289,7 @@ scheduler(void)
 {
   struct proc *p;
   int seed = 0;
-  for(;;){
+  while(1){
     // Enable interrupts on this processor.
     sti();
 
@@ -298,7 +299,7 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
       if (p->priority != 1) {
-	continue;
+        continue;
       }
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -314,10 +315,14 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
+
+      /* Not idea if there is more than one process that has a priority of 1 */
+      /* lottery in priority 1 queue */
     }
+
     release(&ptable.lock);
     int ticket = (int) rand(seed);
-    seed ++;
+    seed++;
     if (ticket < 0) {
       ticket = 0  - ticket;
     }
@@ -329,18 +334,18 @@ scheduler(void)
     acquire(&ptable.lock);
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p ++) {
       if (p->state != RUNNABLE) {
-	continue;
+        continue;
       }
       
       int a;
       int found = 0;
       for (a = 0; a < p->numtickets; a ++) {
-	if (p->tickets[a] == ticket) {
-	  found = 1;
-	}
+        if (p->tickets[a] == ticket) {
+          found = 1;
+        }
       }
       if (found != 1) {
-	continue;
+        continue;
       }
       
       // Process with ticket has been found
@@ -374,18 +379,19 @@ getpinfo(struct pstat* st) {
   acquire(&ptable.lock);
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p ++) {
       if (p->state == UNUSED) {
-	pStruct->inuse[index] = 0;
-	pStruct->pid[index] = p->pid;
-	pStruct->hticks[index] = 0;
-	pStruct->lticks[index] = 0;
+        pStruct->inuse[index] = 0;
+        pStruct->pid[index] = p->pid;
+        pStruct->hticks[index] = 0;
+        pStruct->lticks[index] = 0;
       } else {
-	pStruct->inuse[index] = 1;
-	pStruct->pid[index] = p->pid;
-	pStruct->hticks[index] = p->hticks;
-	pStruct->lticks[index] = p->lticks;
+        pStruct->inuse[index] = 1;
+        pStruct->pid[index] = p->pid;
+        pStruct->hticks[index] = p->hticks;
+        pStruct->lticks[index] = p->lticks;
       }
       index ++;
   }
+  release(&ptable.lock);
   return 0;
 }
 
