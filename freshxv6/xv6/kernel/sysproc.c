@@ -5,6 +5,13 @@
 #include "mmu.h"
 #include "proc.h"
 #include "sysfunc.h"
+#include "pstat.h"
+
+int sys_getpinfo(void) {
+  struct pstat* a;
+  if (argptr(0, (void *)&a, sizeof(*a)) < 0) return -1;
+  return getpinfo(a);
+}
 
 int
 sys_settickets(void) {
