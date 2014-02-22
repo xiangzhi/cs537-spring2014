@@ -9,6 +9,7 @@ struct pipe;
 struct proc;
 struct spinlock;
 struct stat;
+struct pstat;
 
 // bio.c
 void            binit(void);
@@ -112,6 +113,7 @@ void            yield(void);
 int		settickets(int);
 extern int	currentticket;
 unsigned int	rand(unsigned int);
+int		getpinfo(struct pstat *);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -7,6 +7,13 @@
 #include "sysfunc.h"
 
 int
+sys_settickets(void) {
+  int x;
+  if (argint(0, &x) < 0) return -1;
+  return settickets(x);
+}
+
+int
 sys_fork(void)
 {
   return fork();

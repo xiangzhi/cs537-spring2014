@@ -5,6 +5,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -27,6 +28,36 @@ unsigned int rand(unsigned int x) {
   x ^= x << 15 & 0xEFC60000;
   x ^= x >> 18;
   return x;
+}
+
+int getpinfo(struct pstat* st) {
+  if (st == NULL) return -1;
+
+  int index = 0;
+  struct pstat* pStruct;
+  pStruct = st;
+  struct proc* p;
+  int x;
+  int num = argint(0, &x);
+  if (num < 0) cprintf("failed to get argument");
+  pStruct = (struct pstat*) x;
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p ++) {
+      if (p->state == UNUSED) {
+	pStruct->inuse[index] = 0;
+	pStruct->pid[index] = p->pid;
+	pStruct->hticks[index] = 0;
+	pStruct->lticks[index] = 0;
+      } else {
+	pStruct->inuse[index] = 1;
+	pStruct->pid[index] = p->pid;
+	pStruct->hticks[index] = p->hticks;
+	pStruct->lticks[index] = p->lticks;
+      }
+      index ++;
+  }
+  release(&ptable.lock);
+  return 0;
 }
 
 int settickets(int num) {

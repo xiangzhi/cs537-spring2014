@@ -110,8 +110,9 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 int		settickets(int);
-extern int	currentticket
+extern int	currentticket;
 unsigned int	rand(unsigned int);
+int		getpinfo(struct pstat *);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
