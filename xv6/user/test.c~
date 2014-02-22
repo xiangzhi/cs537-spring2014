@@ -1,0 +1,12 @@
+#include "types.h"
+#include "stat.h"
+#include "user.h"
+#include "pstat.h"
+
+int main(int argc, char * argv[]) {
+  int a;
+  a = settickets(15);
+ printf(1, "WHY WONT YOU WORK");
+  printf(1, "yes yse %d/n", a);
+  return 0;
+}
