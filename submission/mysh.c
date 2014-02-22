@@ -1,3 +1,9 @@
+/* CS537 - Spring 2014 - Program 2
+ * CREATED BY:  
+ * Xiang Zhi Tan (xtan@cs.wisc.edu)
+ * Roy Fang (fang@cs.wisc.edu)
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,46 +16,70 @@
 //max size is 514 because 512 character + '\n' + '\0'
 #define MAX_SIZE 514
 
-//function prototypes
+/* function prototypes */
+//display when there is an error
 void displayError(void);
+//prompt the user in interaction mood
 char* prompt(void);
+//method to run execvp on fork
 int runCommand(char**, int);
+//parsing the inputs given by prompt or batch mode
 int parseArgv(char*, char***);
+//run the build in functions
 int buildIn(char**, int);
+//run python files
 void execPython(char*, int, char**);
+//run to redirect output
 void redirectOutput(void);
+//set whether to redirect output
 void setOutput(void);
+//close the output
 void closeOutput(void);
-
+//memoth to execute comamnd
 int execute(char* cmd);
 
-//declaration to fight erros
+//added to prevent error
 pid_t wait(int *stat_loc);
 
 /* helper function */
+//get a substring
 char* substring(char* input, int start, int end);
+//get the index of the character
 int indexOf(char* input, char search_char);
+//remove an element in the array
 int arrayRemove(char*** _array, int size, int position);
 
+//whether the output should be redirec
 int redirectFlag;
+//where to redireced to
 char* redirectFileName;
+//the filedescripter of the redirected file
 int output_fd;
+//whethere the current process should wait
 int waitFlag;
+//the input of cmd or batch input
 char* input;
 
 
+/*
+ * usage of the program
+ */
 void usage(){
     displayError();
     exit(1);
 }
 
+/*
+ * main process loop
+ */
 int main(int argc, char* argv[]) {
     
     // Starting mysh program with incorrect number of arguments
     if (argc < 1 || argc > 2) {
         usage();
     }
-    
+
+    //allocate the input
     input = malloc(MAX_SIZE);
 
     //batch mode
@@ -57,18 +87,19 @@ int main(int argc, char* argv[]) {
         FILE *input_fd;
         char* inputName = argv[1];
         // open the input file
-        input_fd = fopen(inputName,"r");
+        input_fd = fopen(inputName, "r");
         // check whther the input file has open correctly
         if (input_fd == NULL){
 		
             displayError();
             exit(1);
         }
-
+        //get the next line
         input = fgets(input, MAX_SIZE, input_fd);
         while(input != NULL) {
-	       write(STDOUT_FILENO, input, strlen(input));
-	       char* new_line = strchr(input, '\n');
+            //output the file's command
+            write(STDOUT_FILENO, input, strlen(input));
+            char* new_line = strchr(input, '\n');
 	
             //means newline is not in the string
             //which implies the string is longer than 512
@@ -84,7 +115,9 @@ int main(int argc, char* argv[]) {
             if(input[strlen(input)-1] == '\n'){
                 input[strlen(input)-1] = '\0';
             }
+            //exectute the input
             execute(input);
+            //get the next line
             input = fgets(input, MAX_SIZE, input_fd);
         }
         //finish execution done;
@@ -92,12 +125,14 @@ int main(int argc, char* argv[]) {
     }
     else{
         while (1) {
+            //get the next command
             char* cmd = prompt();
             //check whether prompt was successful
             if(cmd == NULL){
                 //continue;
             }
             else{
+                //execute the input
                 execute(cmd);
             }
         }
@@ -115,13 +150,14 @@ void displayError(){
 
 // Prompts and retreives and returns user input
 char* prompt() {
+    //output msg
     char* msg = "mysh> ";
     write(STDOUT_FILENO, msg, strlen(msg));
     //get the input from STDIN
     input = fgets(input, MAX_SIZE, stdin);
+
     //check whether fgets is successful
     if(input == NULL){
-
         //check whether because it just reach end of file
         if(feof(stdin) > 0){
             exit(0);
@@ -132,6 +168,7 @@ char* prompt() {
     }
     //find first instance of '\n'
     char* new_line = strchr(input, '\n');
+
     //means newline is not in the string
     //which implies the string is longer than 512
     if(strlen(input) == MAX_SIZE && new_line == NULL){
@@ -161,6 +198,9 @@ char* prompt() {
     return input;
 }
 
+/*
+ * Excuting the command
+ */
 int execute(char* cmd){
     //reset flags
     waitFlag = 0;
@@ -169,22 +209,26 @@ int execute(char* cmd){
     //parse inputs;
     char** exec_args;
     int num_argv = parseArgv(cmd, &exec_args);
-
+    //check whether parsing was successful
     if(num_argv == -1){
         return 1;
     }
     //change the STDIO if needed
     setOutput();
+    //try running it as build in function
     int check = buildIn(exec_args, num_argv);
+    //see whether buildin functon run succesfully or exited with error
     if(check == 0 || check == 2){
         closeOutput();
         free(exec_args);
         return 1;
     }
+    //try running as fork()
     check = runCommand(exec_args, num_argv);
     //free(exec_args);
     return 0;
 }
+
 /*
  * function that deal with execution of function
  */
@@ -228,6 +272,9 @@ int runCommand(char** exec_args, int num_argv){
     }
 }
 
+/*
+ * Parsing the input
+ */
 int parseArgv(char* input, char*** exec_args){
 
     int i;
@@ -235,7 +282,7 @@ int parseArgv(char* input, char*** exec_args){
     //count the number of arguments in the list;
     char* pointer = (char*) malloc( strlen(input) * sizeof(char) );
     pointer = strncpy(pointer, input, strlen(input) * sizeof(char) );
-    //probably memory problem
+    //try copying the input to other stuff
     if(pointer == NULL){
         displayError();
         exit(1);
@@ -274,6 +321,7 @@ int parseArgv(char* input, char*** exec_args){
         index--;
     }
 
+    //check whether if its with a command but still at the end
     if(list[index-1][strlen(list[index-1]) -1 ] == '&'){
         waitFlag = 1;
         list[index-1][strlen(list[index-1]) -1 ] = '\0';
@@ -362,6 +410,9 @@ int parseArgv(char* input, char*** exec_args){
     return index;
 }
 
+/*
+ * See whether they are build in functions
+ */
 int buildIn(char** exec_args, int num_argv){
     char* command = exec_args[0];
 
@@ -432,6 +483,9 @@ int buildIn(char** exec_args, int num_argv){
     return 1;
 }
 
+/*
+ * See what output it should be
+ */
 void setOutput(void){
     if(redirectFlag == 1){
         output_fd = open(redirectFileName, 
@@ -442,6 +496,9 @@ void setOutput(void){
     }
 }
 
+/*
+ * see whether should close STDIN
+ */
 void closeOutput(void){
     if(redirectFlag == 1){
         close(output_fd);
@@ -449,6 +506,9 @@ void closeOutput(void){
     }
 }
 
+/*
+ * run to redirect output
+ */
 void redirectOutput() {
     int close_rc = close(STDOUT_FILENO);
     if (close_rc < 0) {
@@ -464,6 +524,9 @@ void redirectOutput() {
     }
 }
 
+/*
+ * to run python 
+ */
 void execPython(char* fileName, int argc, char* argv[]) {
 
     //call fork

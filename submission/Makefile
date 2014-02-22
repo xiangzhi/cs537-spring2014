@@ -1,12 +1,12 @@
-# CREATED BY:  Xiang Zhi Tan, Section 2 
+# CS537 - Spring 2014 - P2
+# CREATED BY:  
+# Xiang Zhi Tan (xtan@cs.wisc.edu)
+# Roy Fang (fang@cs.wisc.edu)
 
 C     = gcc
 CFLAGS = -O -Wall
 PYTHON = -lpython2.6 -L /usr/lib/python2.6
 PYTHONINCLUDE = -I /usr/include/python2.6
-
-# argument CFLAGS is missing.  Place it here.
-
 
 # fill in what is needed for target 'all'
 all: mysh.o
