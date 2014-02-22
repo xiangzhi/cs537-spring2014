@@ -9,15 +9,18 @@ PYTHONINCLUDE = -I /usr/include/python2.6
 
 
 # fill in what is needed for target 'all'
-all: lib.o mysh.o
-	$(CC) $(CFLAGS) -o mysh mysh.o lib.o $(PYTHON)
+all: string_lib.o array_lib.o mysh.o
+	$(CC) $(CFLAGS) -o mysh mysh.o array_lib.o string_lib.o $(PYTHON)
 
-lib: lib.c
-	$(CC) -c -o lib.o lib.c $(CFLAGS)
+string_lib: string_lib.c
+	$(CC) -c -o string_lib.o string_lib.c $(CFLAGS)
+
+array_lib: array_lib.c
+	$(CC) -c -o array_lib.o array_lib.c $(CFLAGS)
 
 mysh: mysh.c
 	$(CC) -c -o mysh.o mysh.c $(CFLAGS) $(PYTHONINCLUDE)
 
 clean:
-	rm mysh *.o
+	rm -f mysh *.o
 
