@@ -127,6 +127,7 @@ void Mem_Dump(){
     printf("total size:%d\n", totalSize);
     while(ptr != NULL){
         printf("size: %d \t next:%p\n", ptr->size, ptr->next);
+        ptr = ptr->next;
     }
     return;
 }
