@@ -21,6 +21,7 @@ typedef struct _used_t{
 
 block_t* head;
 int MagicNum = MAGIC_NUM;
+int totalSize = 0;
 
 int Mem_Init(int sizeOfRegion) {
     
@@ -42,7 +43,7 @@ int Mem_Init(int sizeOfRegion) {
     numPages = sizeOfRegion % pageSize;
     left = sizeOfRegion - (numPages * pageSize);
     left = pageSize - left;
-    
+    totalSize = sizeOfRegion;
     trueSize = sizeOfRegion + left;
 
     
@@ -121,7 +122,11 @@ int Mem_free (void* ptr) {
     return 0;
 }
     
-void Mem_Dump() {
-    
+void Mem_Dump(){
+    block_t* ptr = head;
+    printf("total size:%d\n", totalSize);
+    while(ptr != NULL){
+        printf("size: %d \t next:%p\n", ptr->size, ptr->next);
+    }
     return;
 }
