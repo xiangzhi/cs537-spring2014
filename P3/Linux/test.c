@@ -1,4 +1,4 @@
-#include "mem.h"
+#include "mem.c"
 
 int main(int argc, char *argv[]){
     Mem_Init(2048);
