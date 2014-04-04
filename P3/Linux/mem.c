@@ -68,12 +68,7 @@ int Mem_Init(int sizeOfRegion) {
     return 0;
 }
     
-void *Mem_Alloc (int size, int style) {
-    
-    if (style != 0) {
-        m_error = E_BAD_ARGS;
-        return NULL;
-    }
+void *Mem_Alloc (int size) {
     
     if (size <= 0) {
         m_error = E_BAD_ARGS;
