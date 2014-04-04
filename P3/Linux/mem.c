@@ -22,7 +22,6 @@ typedef struct _used_t{
 block_t* head;
 int MagicNum = MAGIC_NUM;
 int totalSize = 0;
-int freeSpace = 0;
 
 //initialize error flag
 int m_error = 0;
@@ -63,8 +62,6 @@ int Mem_Init(int sizeOfRegion) {
     head->size = trueSize;
     head->next = NULL;
 
-    freeSpace = sizeOfRegion;
-
     return 0;
 }
     
@@ -74,7 +71,6 @@ void *Mem_Alloc (int size) {
         m_error = E_BAD_ARGS;
         return NULL;
     }
-    
     size = size + sizeof(used_t);
     //calculate the needed bytes to make the memory arrange by 8 bytes
     size = size + (size%8);
@@ -83,7 +79,6 @@ void *Mem_Alloc (int size) {
     block_t* best = head;
     block_t* prev = NULL;
     block_t* bestprev = NULL;
-
     while(ptr != NULL){
         if(ptr->size >= size && ptr->size < (best->size)){
         	bestprev = prev;
@@ -96,13 +91,12 @@ void *Mem_Alloc (int size) {
     //save the value of the variable of the selected block
     int currSize = best->size;
     block_t* next = best->next;
-
     used_t* header = (used_t*) best;
-    header->size = size + sizeof(used_t);
+    header->size = size;
     header->magic = MAGIC_NUM;
     //find the first byte that is free
-    ptr = (block_t*)(((char*) header) + size + sizeof(used_t));
-    ptr->size = currSize - size - sizeof(used_t);
+    ptr = (block_t*)(((void*) header) + size);
+    ptr->size = currSize - size;
     ptr->next = next;
     //making sure whether there is a previous value
     if(bestprev == NULL){
@@ -114,7 +108,6 @@ void *Mem_Alloc (int size) {
         bestprev->next = ptr;
     }
 
-    freeSpace -= size;
     return ((char*) header) + sizeof(used_t);
 }
 
@@ -170,14 +163,12 @@ int Mem_Free (void* ptr) {
  		prev->next = freeHeader->next;
  	}
 
- 	freeSpace += (size - sizeof(used_t));
     return 0;
 }
     
 void Mem_Dump(){
     block_t* ptr = head;
     printf("total size:%d\n", totalSize);
-    printf("free space left:%d\n", freeSpace);
     while(ptr != NULL){
         printf("size: %d \t next:%p\n", ptr->size, ptr->next);
         ptr = ptr->next;
