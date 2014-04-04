@@ -75,7 +75,7 @@ void *Mem_Alloc (int size, int style) {
         return NULL;
     }
     
-    if (size <= 0 || size > freeSpace) {
+    if (size <= 0) {
         m_error = E_BAD_ARGS;
         return NULL;
     }
