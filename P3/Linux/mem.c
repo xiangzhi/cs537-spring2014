@@ -75,9 +75,9 @@ void *Mem_Alloc (int size) {
         return NULL;
     }
     
-    int neededSize = size + sizeof(used_t);
+    size = size + sizeof(used_t);
     //calculate the needed bytes to make the memory arrange by 8 bytes
-    neededSize = neededSize + (neededSize%8);
+    size = size + (size%8);
 
     block_t* ptr = head;
     block_t* best = head;
@@ -85,7 +85,7 @@ void *Mem_Alloc (int size) {
     block_t* bestprev = NULL;
 
     while(ptr != NULL){
-        if(ptr->size >= neededSize && ptr->size < (best->size)){
+        if(ptr->size >= size && ptr->size < (best->size)){
         	bestprev = prev;
             best = ptr;
         }
