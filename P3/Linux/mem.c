@@ -126,6 +126,7 @@ int Mem_Free (void* ptr) {
     
     used_t* header = (used_t*)(ptr - sizeof(used_t));
     if(header->magic != MAGIC_NUM){
+    	m_error = E_BAD_POINTER;
     	return -1;
     }
 
