@@ -190,8 +190,13 @@ int Mem_Free (void* ptr) {
             prev = itr;
             itr = itr->next;
         }
-    }
+        //means the end of the list
+        if(itr == NULL){
+            prev->next = freeHeader;
+            freeHeader->next = itr;
+        }
 
+    }
  	//coallase list
     //check whether the next element is next to the list
  	block_t* next = freeHeader->next;
