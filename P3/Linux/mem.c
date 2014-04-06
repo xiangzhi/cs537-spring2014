@@ -106,22 +106,35 @@ void *Mem_Alloc (int size) {
     //save the value of the variable of the selected block
     int currSize = best->size;
     block_t* next = best->next;
+    //allocate space for the used header
     used_t* header = (used_t*) best;
     header->size = size;
     header->magic = MAGIC_NUM;
-    //find the first byte that is free
-    ptr = (block_t*)(((void*) header) + size);
-    ptr->size = currSize - size;
-    ptr->next = next;
 
-    //making sure whether there is a previous value
-    if(bestprev == NULL){
-        //if there is no prev, set the head to the new ptr;
-        head = ptr;
+    //find the first byte that is free
+    if(currSize - size > 0){
+        ptr = (block_t*)(((void*) header) + size);
+        ptr->size = currSize - size;
+        ptr->next = next;
+        //making sure whether there is a previous value
+        if(bestprev == NULL){
+            //if there is no prev, set the head to the new ptr;
+            head = ptr;
+        }
+        else{
+            //set the previous node's next to this node
+            bestprev->next = ptr;
+        }
     }
     else{
-        //set the previous node's next to this node
-        bestprev->next = ptr;
+        if(bestprev == NULL){
+            //if there is no prev, set the head to the new ptr;
+            head = next;
+        }
+        else{
+            //set the previous node's next to this node
+            bestprev->next = next;
+        }
     }
 
     return ((char*) header) + sizeof(used_t);
