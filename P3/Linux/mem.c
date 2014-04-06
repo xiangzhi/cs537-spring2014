@@ -112,7 +112,15 @@ void *Mem_Alloc (int size) {
     header->magic = MAGIC_NUM;
 
     //find the first byte that is free
-    if(currSize - size > 0){
+
+    //calculate the remaining space
+    int remaining = currSize - size;
+
+    //this is the minimum size needed including header and 8 bytes.
+    int minimumSize = sizeof(block_t) + 8;
+
+    //create a new node for the remaining freeSpace
+    if(remaining > minimumSize){
         ptr = (block_t*)(((void*) header) + size);
         ptr->size = currSize - size;
         ptr->next = next;
@@ -128,12 +136,12 @@ void *Mem_Alloc (int size) {
     }
     else{
         if(bestprev == NULL){
-            //if there is no prev, set the head to the new ptr;
             head = next;
+            header->size += remaining;
         }
         else{
-            //set the previous node's next to this node
             bestprev->next = next;
+            header->size += remaining;
         }
     }
 

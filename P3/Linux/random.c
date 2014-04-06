@@ -77,6 +77,10 @@ int main(int argc, char* argv[]) {
       doAlloc = random() % 4;
       doWrite = writeData;
 
+      if(slot == 954){
+         Mem_Dump();
+      }
+
       if (!doAlloc || ptr[slot] != NULL) {
          if (ptr[slot] == NULL)
              ;//assert(Mem_Free(ptr[slot]) == -1);
