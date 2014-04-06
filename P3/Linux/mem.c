@@ -200,8 +200,8 @@ int Mem_Free (void* ptr) {
  	if(prev == NULL){
  		prev = head;
  	}
-    
- 	else if((((char*)prev) + prev->size) == (char*)freeHeader){
+
+ 	if((((char*)prev) + prev->size) == (char*)freeHeader){
  		prev->size += freeHeader->size;
  		prev->next = freeHeader->next;
  	}
