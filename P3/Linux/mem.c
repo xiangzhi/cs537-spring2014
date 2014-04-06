@@ -79,8 +79,12 @@ void *Mem_Alloc (int size) {
     block_t* best = head;
     block_t* prev = NULL;
     block_t* bestprev = NULL;
+
     while(ptr != NULL){
-        if(ptr->size >= size && ptr->size < (best->size)){
+        printf("size:%d >= size:%d\n",ptr->size,size);
+        printf("size:%d > size:%d\n",best->size,ptr->size);
+        if((ptr->size >= size) && (ptr->size < (best->size))){
+            write(1, "test12\n", sizeof("test12\n"));
         	bestprev = prev;
             best = ptr;
         }

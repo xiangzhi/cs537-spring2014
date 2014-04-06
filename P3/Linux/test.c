@@ -1,19 +1,20 @@
 #include "mem.h"
 #include <string.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <assert.h>
 
 int main(int argc, char *argv[]){
     Mem_Init(2048);
-    char* ptr1 = (char*)Mem_Alloc(256);
-    char* ptr2 = (char*)Mem_Alloc(512);
-    char* ptr3 = (char*)Mem_Alloc(256);
-    char* ptr4 = (char*)Mem_Alloc(512);
- 	Mem_Dump();
-    Mem_Free(ptr1);
-    Mem_Free(ptr2);
-	Mem_Dump();
-	memcpy(ptr4,"LOL",strlen("LOL"));
-    Mem_Free(ptr3);
-    Mem_Free(ptr4);
+    void* ptr[9];
+    ptr[0] = Mem_Alloc(100);
+    ptr[1] = Mem_Alloc(20);
+    ptr[2] = Mem_Alloc(10);
+    ptr[3] = Mem_Alloc(100);
+    Mem_Dump();
+    Mem_Free(ptr[0]);
+    Mem_Free(ptr[2]);
+    ptr[2] = Mem_Alloc(3);
+    Mem_Dump();
 	return 0;
 }
