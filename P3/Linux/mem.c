@@ -166,8 +166,9 @@ int Mem_Free (void* ptr) {
 
  	//coallase list
  	block_t* next = freeHeader->next;
+
  	if((((char*)freeHeader) + freeHeader->size) == (char*)next){
- 		freeHeader->size = next->size;
+ 		freeHeader->size += next->size;
  		freeHeader->next = next->next;
  	}
  	//this mean the prev and freelist are connected
