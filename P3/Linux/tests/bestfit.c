@@ -43,7 +43,7 @@ int main() {
    assert(ptr[2] != NULL);
 
    ptr[4] = Mem_Alloc(960);
-   assert(ptr[4] != NULL);
+   assert(ptr[4] == NULL);
 
    exit(0);
 }

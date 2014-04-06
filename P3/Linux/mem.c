@@ -57,7 +57,6 @@ int Mem_Init(int sizeOfRegion) {
     close(fd);
 
     head = (block_t *) ptr;
-    //head->size = trueSize - sizeof(block_t);
     //write(1, "test\n", sizeof("test\n"));
     head->size = trueSize;
     head->next = NULL;
@@ -186,17 +185,23 @@ int Mem_Free (void* ptr) {
  	}
 
  	//coallase list
+    //check whether the next element is next to the list
  	block_t* next = freeHeader->next;
 
- 	if((((char*)freeHeader) + freeHeader->size) == (char*)next){
- 		freeHeader->size += next->size;
- 		freeHeader->next = next->next;
- 	}
- 	//this mean the prev and freelist are connected
+    //first check whether the header is the end
+    if(next != NULL){
+        if((((char*)freeHeader) + freeHeader->size) == (char*)next){
+            freeHeader->size += next->size;
+            freeHeader->next = next->next;
+        }
+    }
+
+    //if the prev is null, means the prev is lower than the first element
  	if(prev == NULL){
  		prev = head;
  	}
- 	if((((char*)prev) + prev->size) == (char*)freeHeader){
+    
+ 	else if((((char*)prev) + prev->size) == (char*)freeHeader){
  		prev->size += freeHeader->size;
  		prev->next = freeHeader->next;
  	}

@@ -25,7 +25,7 @@ int main() {
 
    while(Mem_Alloc(128) != NULL);
    assert(m_error == E_NO_SPACE);
-
+   Mem_Dump();
    assert(Mem_Free(ptr[2]) == 0);
    assert(Mem_Free(ptr[3]) == 0);
    assert(Mem_Free(first) == 0);
