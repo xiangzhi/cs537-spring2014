@@ -76,22 +76,33 @@ void *Mem_Alloc (int size) {
     size = size + (8 - (size%8));
 
     block_t* ptr = head;
-    block_t* best = head;
+    block_t* best = NULL;
     block_t* prev = NULL;
     block_t* bestprev = NULL;
 
     while(ptr != NULL){
-        printf("size:%d >= size:%d\n",ptr->size,size);
-        printf("size:%d > size:%d\n",best->size,ptr->size);
-        if((ptr->size >= size) && (ptr->size < (best->size))){
-            write(1, "test12\n", sizeof("test12\n"));
-        	bestprev = prev;
-            best = ptr;
+        if(ptr->size >= size){
+            //if there is a best before
+            if(best != NULL){
+                //make sure the ptr is smaller than current best
+                if(best->size > ptr->size){
+                    bestprev = prev;
+                    best = ptr;
+                }
+            }
+            else{
+                bestprev = prev;
+                best = ptr;
+            }
         }
         prev = ptr;
         ptr = ptr->next;
     }
-
+    //no best space
+    if(best == NULL){
+        m_error = E_NO_SPACE;
+        return NULL;
+    }
     //save the value of the variable of the selected block
     int currSize = best->size;
     block_t* next = best->next;
@@ -102,6 +113,7 @@ void *Mem_Alloc (int size) {
     ptr = (block_t*)(((void*) header) + size);
     ptr->size = currSize - size;
     ptr->next = next;
+
     //making sure whether there is a previous value
     if(bestprev == NULL){
         //if there is no prev, set the head to the new ptr;
@@ -154,8 +166,9 @@ int Mem_Free (void* ptr) {
 
  	//coallase list
  	block_t* next = freeHeader->next;
+
  	if((((char*)freeHeader) + freeHeader->size) == (char*)next){
- 		freeHeader->size = next->size;
+ 		freeHeader->size += next->size;
  		freeHeader->next = next->next;
  	}
  	//this mean the prev and freelist are connected
