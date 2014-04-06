@@ -166,29 +166,37 @@ int Mem_Free (void* ptr) {
 
     //go through the freelist and insert the value
  	block_t* itr = head;
- 	block_t* prev = NULL;
- 	while(itr != NULL){
- 		if(freeHeader < itr){
- 			if(prev == NULL){
- 				freeHeader->next = head;
- 				head = freeHeader;
- 				break;
- 			}
- 			else{
- 				freeHeader->next = itr;
- 				prev->next = freeHeader;
- 				break;
- 			}
- 		}
- 		prev = itr;
- 		itr = itr->next;
- 	}
+    block_t* prev = NULL;
+
+    //there is a possibility head is null, all space used up
+    if(itr == NULL){
+        freeHeader->next = head;
+        head = freeHeader;
+    }
+    else{
+        while(itr != NULL){
+            if(freeHeader < itr){
+                if(prev == NULL){
+                    freeHeader->next = head;
+                    head = freeHeader;
+                    break;
+                }
+                else{
+                    freeHeader->next = itr;
+                    prev->next = freeHeader;
+                    break;
+                }
+            }
+            prev = itr;
+            itr = itr->next;
+        }
+    }
 
  	//coallase list
     //check whether the next element is next to the list
  	block_t* next = freeHeader->next;
 
-    //first check whether the header is the end
+    //first check whether there is an element after it
     if(next != NULL){
         if((((char*)freeHeader) + freeHeader->size) == (char*)next){
             freeHeader->size += next->size;
@@ -196,15 +204,13 @@ int Mem_Free (void* ptr) {
         }
     }
 
-    //if the prev is null, means the prev is lower than the first element
- 	if(prev == NULL){
- 		prev = head;
- 	}
-
- 	if((((char*)prev) + prev->size) == (char*)freeHeader){
- 		prev->size += freeHeader->size;
- 		prev->next = freeHeader->next;
- 	}
+    //check whether there is an element before it
+    if(prev != NULL){
+        if((((char*)prev) + prev->size) == (char*)freeHeader){
+                prev->size += freeHeader->size;
+                prev->next = freeHeader->next;
+            }        
+    }
 
     return 0;
 }
