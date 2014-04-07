@@ -1,3 +1,9 @@
+/* CS537 - Spring 2014 - Program 3
+ * CREATED BY:  
+ * Xiang Zhi Tan (xtan@cs.wisc.edu)
+ * Roy Fang (fang@cs.wisc.edu)
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
