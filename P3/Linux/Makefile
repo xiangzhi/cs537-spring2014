@@ -1,9 +1,12 @@
-# CREATED BY:  Xiang Zhi Tan, Section 2 
+# CS537 - Spring 2014 - Program 2
+# CREATED BY:  
+# Xiang Zhi Tan (xtan@cs.wisc.edu)
+# Roy Fang (fang@cs.wisc.edu)
+#
 
 CC     = gcc
 CFLAGS = -Werror -Wall
 
-# fill in what is needed for target 'all'
 libmem.so: mem.o
 	$(CC) -shared -o libmem.so mem.o
 
