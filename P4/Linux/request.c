@@ -4,6 +4,7 @@
 
 #include "cs537.h"
 #include "request.h"
+#include "http_info.h"
 
 // requestError(      fd,    filename,        "404",    "Not found", "CS537 Server could not find this file");
 void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) 
@@ -147,9 +148,9 @@ void requestServeStatic(int fd, char *filename, int filesize)
 }
 
 // handle a request
-void requestHandle(int fd)
+void requestHandle(http_info* info)
 {
-
+   /*
    int is_static;
    struct stat sbuf;
    char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
@@ -161,31 +162,32 @@ void requestHandle(int fd)
    sscanf(buf, "%s %s %s", method, uri, version);
 
    printf("%s %s %s\n", method, uri, version);
+   */
 
-   if (strcasecmp(method, "GET")) {
-      requestError(fd, method, "501", "Not Implemented", "CS537 Server does not implement this method");
-      return;
-   }
-   requestReadhdrs(&rio);
+   struct stat sbuf;
 
-   is_static = requestParseURI(uri, filename, cgiargs);
-   if (stat(filename, &sbuf) < 0) {
-      requestError(fd, filename, "404", "Not found", "CS537 Server could not find this file");
+   if (strcasecmp(info->method, "GET")) {
+      requestError(info->connfd, info->method, "501", "Not Implemented", "CS537 Server does not implement this method");
       return;
    }
 
-   if (is_static) {
+   if (stat(info->filename, &sbuf) < 0) {
+      requestError(info->connfd, info->filename, "404", "Not found", "CS537 Server could not find this file");
+      return;
+   }
+
+   if (info->is_static) {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-         requestError(fd, filename, "403", "Forbidden", "CS537 Server could not read this file");
+         requestError(info->connfd, info->filename, "403", "Forbidden", "CS537 Server could not read this file");
          return;
       }
-      requestServeStatic(fd, filename, sbuf.st_size);
+      requestServeStatic(info->connfd, info->filename, sbuf.st_size);
    } else {
       if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-         requestError(fd, filename, "403", "Forbidden", "CS537 Server could not run this CGI program");
+         requestError(info->connfd, info->filename, "403", "Forbidden", "CS537 Server could not run this CGI program");
          return;
       }
-      requestServeDynamic(fd, filename, cgiargs);
+      requestServeDynamic(info->connfd, info->filename, info->cgiargs);
    }
 }
 

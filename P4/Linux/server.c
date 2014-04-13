@@ -1,5 +1,6 @@
 #include "cs537.h"
 #include "request.h"
+#include "http_info.h"
 #include "Pthread.h"
 #include <string.h>
 #define TYPE_LENGTH 6
@@ -15,21 +16,35 @@
 
 //function prototype;
 void* worker();
+http_info readHeader(int fd);
+void serverParseURI(http_info* info);
+void copyInfo(http_info* src, http_info* dest);
 
-typedef struct _http_info{
-    int is_static;
-    struct stat sbuf;
-    char buf[MAXLINE];
-    char method[MAXLINE];
-    char uri[MAXLINE];
-    char version[MAXLINE];
-    char filename[MAXLINE];
-    char cgiargs[MAXLINE];
-    rio_t rio;
-    int connfd;
-}http_info;
+int sfnfCompare(const void* p1, const void* p2);
+int sffCompare(const void* p1, const void* p2);
 
-void getargs(int *port, int *thread, int *buffer, char** schedual, int argc, char *argv[])
+
+//global buffer stuff
+http_info* buffer;
+//size of the buffer
+int size;
+//use pointer;
+int useptr;
+//fill pointer
+int fillptr;
+//number of buffer full;
+int numfull;
+//
+int request;
+
+int mode;
+
+pthread_cond_t cond_full = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
+void getargs(int *port, int *thread, int *buffer, int argc, char *argv[])
 {
     if (argc != 5) {
 	fprintf(stderr, "Usage: %s <port> <threads> <buffers> <schedalg>\n", argv[0]);
@@ -46,53 +61,36 @@ void getargs(int *port, int *thread, int *buffer, char** schedual, int argc, cha
         exit(1);        
     }
     *buffer = atoi(argv[3]);
-    if(strlen(argv[4]) > TYPE_LENGTH){
-        fprintf(stderr, "Error: schedalg input is invalid\n");
-        exit(1);        
+
+    if(strcmp(argv[4], "FIFO") == 0){
+        mode = 0;
     }
-    strncpy(*schedual, argv[4],TYPE_LENGTH);
-    //make sure strncpy copy correctly
-    if(strlen(*schedual) != strlen(argv[4])){
-        fprintf(stderr, "strncpy failed\n");
-        exit(1);
+    else if(strcmp(argv[4], "SFNF") == 0){
+        mode = 1;
+    }
+    else if(strcmp(argv[4], "SFF") == 0){
+        mode = 2;
+    }
+    else{
+        fprintf(stderr, "Error: schedalg input is invalid\n");
+        exit(1);         
     }
 }
-
-
-//global buffer stuff
-int* buffer;
-//size of the buffer
-int size;
-//use pointer;
-int useptr;
-//fill pointer
-int fillptr;
-//number of buffer full;
-int numfull;
-//
-int request;
-
-pthread_cond_t cond_full = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char *argv[])
 {
     int listenfd, connfd, port, clientlen;
     int threadNum, bufferLength;
-    char* type = (char*) malloc(sizeof(char) * TYPE_LENGTH);
     struct sockaddr_in clientaddr;
 
-    getargs(&port,&threadNum,&bufferLength, &type, argc, argv);
-
-    buffer = (int*) malloc(sizeof(int) * bufferLength);
+    getargs(&port,&threadNum,&bufferLength, argc, argv);
+    buffer = (http_info*) malloc(sizeof(http_info) * bufferLength);
     pthread_t* cids = (pthread_t*) malloc(sizeof(pthread_t) * threadNum);
     size = bufferLength;
     useptr = 0;
     fillptr = 0;
     numfull = 0;
     request = 0;
-
     int i;
     //create those threads;
     for( i = 0; i < threadNum; i++){
@@ -103,16 +101,28 @@ int main(int argc, char *argv[])
     while (1) {
 	   clientlen = sizeof(clientaddr);
 	   connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
-
         //start handling
         Pthread_mutex_lock(&mutex);
         //make sure the buffer is atleast empty
         while(numfull == size){
             Pthread_cond_wait(&cond_empty, &mutex);
         }
-        //FIFO
-        buffer[fillptr] = connfd;
-        fillptr = (fillptr + 1) % size;
+        http_info info = readHeader(connfd);
+
+        switch(mode){
+            case 0:
+                buffer[fillptr] = info;
+                fillptr = (fillptr + 1) % size;
+                break;
+            case 1:
+                buffer[numfull] = info;
+                qsort(buffer, numfull, sizeof(http_info), sfnfCompare);
+                break;
+            case 2:
+                buffer[numfull] = info;
+                qsort(buffer, numfull, sizeof(http_info), sffCompare);
+                break;
+        }
         numfull++;
         Pthread_cond_signal(&cond_full);
         Pthread_mutex_unlock(&mutex);
@@ -127,23 +137,52 @@ int main(int argc, char *argv[])
     }
 }
 
-http_info* readHeader(int fd){
-    /*
-    int is_static;
-   struct stat sbuf;
-   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-   char filename[MAXLINE], cgiargs[MAXLINE];
-   rio_t rio;
 
-   Rio_readinitb(&rio, fd);
-   Rio_readlineb(&rio, buf, MAXLINE);
-   sscanf(buf, "%s %s %s", method, uri, version);*/
+// Return 1 if static, 0 if dynamic content
+// Calculates filename (and cgiargs, for dynamic) from uri
+//
+void serverParseURI(http_info* info) 
+{
+   char *ptr;
+
+   if (!strstr(info->uri, "cgi")) {
+      // static
+      strcpy(info->cgiargs, "");
+      sprintf(info->filename, ".%s", info->uri);
+      if (info->uri[strlen(info->uri)-1] == '/') {
+         strcat(info->filename, "home.html");
+      }
+      info->is_static = 1;
+   } else {
+      // dynamic
+      ptr = index(info->uri, '?');
+      if (ptr) {
+         strcpy(info->cgiargs, ptr+1);
+         *ptr = '\0';
+      } else {
+         strcpy(info->cgiargs, "");
+      }
+      sprintf(info->filename, ".%s", info->uri);
+      info->is_static = 0;
+   }
+}
+
+http_info readHeader(int fd){
+    rio_t rio;
+    char buf[MAXLINE];
+    http_info info;
+    info.connfd = fd;
+    Rio_readinitb(&rio, fd);
+    Rio_readlineb(&rio, buf, MAXLINE);
+    sscanf(buf, "%s %s %s", info.method, info.uri, info.version);
+    serverParseURI(&info);
+    return info;
 }
 
 void* worker(){
     while(1){
-        //local version of connfd;
-        int connfd;
+        //local version of http_info
+        http_info info;
         
         //start handling
         Pthread_mutex_lock(&mutex);
@@ -151,23 +190,73 @@ void* worker(){
         while(numfull == 0){
             Pthread_cond_wait(&cond_full, &mutex);
         }
-        connfd = buffer[useptr];
-        useptr = (useptr+ 1 ) % size;
-        numfull--;
+
+        switch(mode){
+            case 0:
+                copyInfo(&buffer[useptr], &info);
+                //copy http_info;
+                useptr = (useptr+ 1 ) % size;
+                numfull--;
+                break;
+            case 1:
+                copyInfo(&buffer[0], &info);
+                //move the last item to the first;
+                if(numfull > 1){
+                    copyInfo(&buffer[numfull-1], &buffer[0]);
+                }
+                //get the correct number
+                numfull--;
+                //sort again
+                qsort(buffer, numfull, sizeof(http_info), sfnfCompare);
+                break;
+            case 2:
+                copyInfo(&buffer[0], &info);
+                //move the last item to the first;
+                if(numfull > 1){
+                    copyInfo(&buffer[numfull-1], &buffer[0]);
+                }
+                //get the correct number
+                numfull--;
+                //sort again
+                qsort(buffer, numfull, sizeof(http_info), sffCompare);
+                break;
+        }
         request++;
+
         Pthread_cond_signal(&cond_empty);
-        printf("request:%d\n", request);
+        printf("PID:%u, request:%d,Handling request\n", pthread_self(), request);
         Pthread_mutex_unlock(&mutex);   
         //done handling
-        printf("PID:%u,Handling request", pthread_self());
         //handle request
-        requestHandle(connfd);
-        Close(connfd);
+        requestHandle(&info);
+        //close and free resources;
+        Close(info.connfd);
     }
     return NULL;
 }
 
+void copyInfo(http_info* src, http_info* dest){
+    dest->is_static = src->is_static;
+    strncpy(dest->method, src->method, MAXLINE);
+    strncpy(dest->uri, src->uri, MAXLINE);
+    strncpy(dest->version, src->version, MAXLINE);
+    strncpy(dest->filename, src->filename, MAXLINE);
+    strncpy(dest->cgiargs, src->cgiargs, MAXLINE);
+    dest->connfd = src->connfd;
+}
     
+int sfnfCompare(const void* p1, const void* p2){
+    int num = strlen(((http_info*)p1)->filename) - strlen(((http_info*)p2)->filename);
+    printf("number");
+    return num;
+}
 
+int sffCompare(const void* p1, const void* p2){
+    struct stat file1;
+    struct stat file2;
+    Stat(((http_info*)p1)->filename, &file1);
+    Stat(((http_info*)p2)->filename, &file2);
+    return file1.st_size - file2.st_size;
+}
 
  
