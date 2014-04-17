@@ -27,8 +27,13 @@ main(int argc, char *argv[])
   assert(0,lock_release(&lock));
   int i;
   for(i = 0; i < threadCount; i++){
-    assert(0,thread_create(worker,(void*)&i));
+    int x = thread_create(worker,(void*)&i);
+    if( x < 0){
+       printf(1,"error: thread less than 0");
+       exit();
+    }
   }
+  assert(0,thread_join());
   exit();
 }
 

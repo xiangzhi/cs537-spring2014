@@ -15,7 +15,7 @@ int
 main(int argc, char *argv[])
 {
   if(argc != 3){
-    printf(1,"usage: test <threads> <loop>");
+    printf(1,"usage: test <threads> <loop>\n");
     exit();
   }
   assert(0,lock_init(&lock));
@@ -27,8 +27,13 @@ main(int argc, char *argv[])
   assert(0,lock_release(&lock));
   int i;
   for(i = 0; i < threadCount; i++){
-    assert(0,thread_create(worker,(void*)&i));
+    int x = thread_create(worker,(void*)&i);
+    if( x < 100){
+       printf(1,"error: thread less than 0");
+       exit();
+    }
   }
+  assert(0,thread_join());
   exit();
 }
 
