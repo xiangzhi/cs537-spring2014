@@ -14,14 +14,19 @@ int o = 0;
 int
 main(int argc, char *argv[])
 {
+  if(argc != 3){
+    printf(1,"usage: test <threads> <loop>\n");
+    exit();
+  }
   assert(0,lock_init(&lock));
-  
+  o = atoi(argv[2]);
+  int threadCount = atoi(argv[1]);
   lock_t* invalid = NULL;
   assert(-1,lock_init(invalid));
   assert(0,lock_acquire(&lock));
   assert(0,lock_release(&lock));
   int i;
-  for(i = 0; i < 10; i++){
+  for(i = 0; i < threadCount; i++){
     assert(0,thread_create(worker,(void*)&i));
   }
   exit();
