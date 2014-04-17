@@ -5,7 +5,7 @@
 #include "x86.h"
 
 int lock_init(lock_t *lock) {
-  if(lock == NULL){
+  If(lock == null){
     return -1;
   }
   lock->locked = 0;
@@ -22,9 +22,6 @@ int lock_acquire(lock_t *lock) {
 }
 
 int lock_release(lock_t *lock) {
-  if (lock == NULL){
-    return -1;
-  }
   xchg(&(lock->locked), 0);
   return 0;
 }

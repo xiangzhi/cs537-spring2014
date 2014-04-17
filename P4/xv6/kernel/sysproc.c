@@ -41,7 +41,6 @@ int sys_clone(void) {
   fcn = (void *) _fcn;
   arg = (void *) _arg;
   stk = (void *) _stk;
-  
   return 0;
 }
 

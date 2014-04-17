@@ -8,10 +8,12 @@
 
 
 int sys_cond_wait(void) {
+	// Implement in proc.c to get proc table
 	return 0;
 }
 
 int sys_cond_signal(void) {
+	// Implement in proc.c to get proc table
 	return 0;
 }
 
@@ -39,7 +41,6 @@ int sys_clone(void) {
   fcn = (void *) _fcn;
   arg = (void *) _arg;
   stk = (void *) _stk;
-  
   return 0;
 }
 
