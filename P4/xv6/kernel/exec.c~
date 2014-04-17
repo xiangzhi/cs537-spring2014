@@ -61,7 +61,7 @@ exec(char *path, char **argv)
     sp -= strlen(argv[argc]) + 1;
     sp &= ~3;
     if(copyout(pgdir, sp, argv[argc], strlen(argv[argc]) + 1) < 0)  //copout(pageDirectory, dest, source, amount) return less than 0 if fail
-      goto bad;c
+      goto bad;
     ustack[3+argc] = sp;
   }
   ustack[3+argc] = 0;

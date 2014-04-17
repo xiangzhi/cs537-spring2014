@@ -122,7 +122,6 @@ growproc(int n)
 }
 
 int join(void **stack) {
-
   return 0;
 }
 
@@ -144,10 +143,13 @@ int clone(void *fcn, void* arg, void* stack) {
 
     stackBtm =stack + 4096;
     *(uint *)(((char *) stackBtm) - 2 * sizeof(void *)) = 0xffffffff;
-    *((uint *)((char *) stackBtm) - sizeof(void *)) = arg;
+    *((uint *)((char *) stackBtm) - sizeof(void *)) = (uint) arg;
     // put an old base pointer on the stack?
-    //np->tf->eip = fcn;
-    //np-tf-ebp = esp;
+		np->tf->esp = (uint)(((char *) stackBtm) - 2 * sizeof(void *));
+    np->tf->eip = (uint)fcn;
+    np->tf->ebp = np->tf->esp;
+		np->thread = 1;
+		np->state = RUNNABLE;
     return pid;
 }
 

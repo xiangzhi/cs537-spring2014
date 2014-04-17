@@ -41,12 +41,20 @@ int sys_clone(void) {
   fcn = (void *) _fcn;
   arg = (void *) _arg;
   stk = (void *) _stk;
+  
   return 0;
 }
 
 int sys_join(void) {
+	void **stk;
+	int _stk;
+	int rtn;
 
-  return 0;
+	_stk = argint(0, &_stk);
+	stk = (void **) _stk;
+
+	rtn = join(stk);
+  return rtn;
 }
 
 int
