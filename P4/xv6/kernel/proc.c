@@ -138,7 +138,7 @@ int join(void **stack) {
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-        //freevm(p->pgdir);
+        freevm(p->pgdir);
         p->state = UNUSED;
         p->pid = 0;
         p->parent = 0;
@@ -157,7 +157,8 @@ int join(void **stack) {
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
-  return 0;
+  //return 0;
+  }
 }
 
 int clone(void *fcn, void* arg, void* stack) {
