@@ -87,7 +87,8 @@ int main(int argc, char *argv[])
   filename = argv[3];
 
   /* Open a single connection to the specified host and port */
-  for(int i = 0; i < 10000; i++){
+  int i;
+  for(i = 0; i < 10000; i++){
     clientfd = Open_clientfd(host, port);
     
     clientSend(clientfd, filename);

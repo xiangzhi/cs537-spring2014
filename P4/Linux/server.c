@@ -43,7 +43,7 @@ pthread_cond_t cond_full = PTHREAD_COND_INITIALIZER;
 pthread_cond_t cond_empty = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-
+//parse the input arguments
 void getargs(int *port, int *thread, int *buffer, int argc, char *argv[])
 {
     if (argc != 5) {
@@ -84,9 +84,13 @@ int main(int argc, char *argv[])
     struct sockaddr_in clientaddr;
 
     getargs(&port,&threadNum,&bufferLength, argc, argv);
+    //create the buffer with user specified length
     buffer = (http_info*) malloc(sizeof(http_info) * bufferLength);
+    //create a list for cids
     pthread_t* cids = (pthread_t*) malloc(sizeof(pthread_t) * threadNum);
+    //save the size of buffer
     size = bufferLength;
+    //initalize all the  global variables;
     useptr = 0;
     fillptr = 0;
     numfull = 0;
@@ -96,10 +100,11 @@ int main(int argc, char *argv[])
     for( i = 0; i < threadNum; i++){
         Pthread_create(&cids[i], NULL, worker, NULL);
     }
-
+    //open the listening port
     listenfd = Open_listenfd(port);
     while (1) {
 	   clientlen = sizeof(clientaddr);
+       //wait for connection
 	   connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
         //start handling
         Pthread_mutex_lock(&mutex);
@@ -107,6 +112,7 @@ int main(int argc, char *argv[])
         while(numfull == size){
             Pthread_cond_wait(&cond_empty, &mutex);
         }
+        //read the http header first
         http_info info = readHeader(connfd);
 
         switch(mode){
@@ -126,21 +132,12 @@ int main(int argc, char *argv[])
         numfull++;
         Pthread_cond_signal(&cond_full);
         Pthread_mutex_unlock(&mutex);
-
-	// 
-	// CS537: In general, don't handle the request in the main thread.
-	// Save the relevant info in a buffer and have one of the worker threads 
-	// do the work. However, for SFF, you may have to do a little work
-	// here (e.g., a stat() on the filename) ...
-	// 
-
     }
 }
 
 
-// Return 1 if static, 0 if dynamic content
-// Calculates filename (and cgiargs, for dynamic) from uri
-//
+//parse the http_info files's pathname
+//get the file name and any additional arguments with it.
 void serverParseURI(http_info* info) 
 {
    char *ptr;
@@ -167,6 +164,7 @@ void serverParseURI(http_info* info)
    }
 }
 
+//function to read the HTTP header from the connection descripter
 http_info readHeader(int fd){
     rio_t rio;
     char buf[MAXLINE];
@@ -175,10 +173,12 @@ http_info readHeader(int fd){
     Rio_readinitb(&rio, fd);
     Rio_readlineb(&rio, buf, MAXLINE);
     sscanf(buf, "%s %s %s", info.method, info.uri, info.version);
+    //parse the http path
     serverParseURI(&info);
     return info;
 }
 
+//function run by the worker threads
 void* worker(){
     while(1){
         //local version of http_info
@@ -193,6 +193,7 @@ void* worker(){
 
         switch(mode){
             case 0:
+                //copy the http_info, this is thread safe
                 copyInfo(&buffer[useptr], &info);
                 //copy http_info;
                 useptr = (useptr+ 1 ) % size;
@@ -235,6 +236,8 @@ void* worker(){
     return NULL;
 }
 
+
+//a thread safe copyer to copy http_info
 void copyInfo(http_info* src, http_info* dest){
     dest->is_static = src->is_static;
     strncpy(dest->method, src->method, MAXLINE);
@@ -245,12 +248,14 @@ void copyInfo(http_info* src, http_info* dest){
     dest->connfd = src->connfd;
 }
     
+//qsort function when it is the shortest file name first
 int sfnfCompare(const void* p1, const void* p2){
     int num = strlen(((http_info*)p1)->filename) - strlen(((http_info*)p2)->filename);
     printf("number");
     return num;
 }
 
+//qsort function for smallest file first
 int sffCompare(const void* p1, const void* p2){
     struct stat file1;
     struct stat file2;
