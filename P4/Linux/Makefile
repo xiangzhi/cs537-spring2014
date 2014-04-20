@@ -6,7 +6,7 @@ OBJS = server.o request.o cs537.o client.o Pthread.o
 TARGET = server
 
 CC = gcc
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -Werror
 
 LIBS = -lpthread 
 

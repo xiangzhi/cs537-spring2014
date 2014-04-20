@@ -225,7 +225,7 @@ void* worker(){
         request++;
 
         Pthread_cond_signal(&cond_empty);
-        printf("PID:%u, request:%d,Handling request\n", pthread_self(), request);
+        //printf("PID:%u, request:%d,Handling request\n", pthread_self(), request);
         Pthread_mutex_unlock(&mutex);   
         //done handling
         //handle request
