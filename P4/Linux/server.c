@@ -114,22 +114,25 @@ int main(int argc, char *argv[])
         }
         //read the http header first
         http_info info = readHeader(connfd);
+        printf("Incoming file:%s\n",info.filename);
 
         switch(mode){
             case 0:
                 buffer[fillptr] = info;
                 fillptr = (fillptr + 1) % size;
+                numfull++;
                 break;
             case 1:
                 buffer[numfull] = info;
+                numfull++;
                 qsort(buffer, numfull, sizeof(http_info), sfnfCompare);
                 break;
             case 2:
                 buffer[numfull] = info;
+                numfull++;
                 qsort(buffer, numfull, sizeof(http_info), sffCompare);
                 break;
         }
-        numfull++;
         Pthread_cond_signal(&cond_full);
         Pthread_mutex_unlock(&mutex);
     }
@@ -205,29 +208,36 @@ void* worker(){
                 if(numfull > 1){
                     copyInfo(&buffer[numfull-1], &buffer[0]);
                 }
-                //get the correct number
-                numfull--;
                 //sort again
                 qsort(buffer, numfull, sizeof(http_info), sfnfCompare);
+                //get the correct number
+                numfull--;
                 break;
             case 2:
                 copyInfo(&buffer[0], &info);
+                /*
+                int i;
+                printf("QUEUE\n");
+                for(i = 0; i < numfull; i++){
+                    printf("file:%s\n", buffer[i].filename);
+                }
+                */
                 //move the last item to the first;
                 if(numfull > 1){
                     copyInfo(&buffer[numfull-1], &buffer[0]);
                 }
-                //get the correct number
-                numfull--;
                 //sort again
                 qsort(buffer, numfull, sizeof(http_info), sffCompare);
+               //get the correct number
+                numfull--;
                 break;
         }
         request++;
 
         Pthread_cond_signal(&cond_empty);
-        printf("PID:%u, request:%d,Handling request\n", (unsigned int)pthread_self(), request);
+        //printf("PID:%u, request:%d,Handling request\n", (unsigned int)pthread_self(), request);
         //printf("path:%s\n", info.uri);
-        //printf("filename:%s\n", info.filename;
+        printf("filename:%s\n", info.filename);
         //printf("isStatic:%d\n", info.is_static);
         Pthread_mutex_unlock(&mutex);   
         //done handling
@@ -262,6 +272,8 @@ int sffCompare(const void* p1, const void* p2){
     struct stat file1;
     struct stat file2;
     Stat(((http_info*)p1)->filename, &file1);
+    //printf("file %llu size:%llu\n",file1.st_ino,  file1.st_size);
+    //printf("file %llu size:%llu\n", file2.st_ino, file2.st_size);
     Stat(((http_info*)p2)->filename, &file2);
     return file1.st_size - file2.st_size;
 }

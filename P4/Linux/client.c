@@ -23,6 +23,7 @@
 
 #include "cs537.h"
  #include "Pthread.h"
+ #include <unistd.h>
 
 /*
  * Send an HTTP request for the specified file 
@@ -75,7 +76,7 @@ void clientPrint(int fd)
 
 void* workers(void* _filename){
   char* filename = (char*) _filename;
-  printf("file:%s\n", filename);
+  //printf("file:%s\n", filename);
   int clientfd = Open_clientfd("localhost", 8559);
   clientSend(clientfd, filename);
   clientPrint(clientfd);
@@ -90,14 +91,14 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  int num = 4;
+  int num = 3;
   pthread_t* cids = (pthread_t*) malloc(sizeof(pthread_t) * num);
 
 
-  Pthread_create(&cids[0], NULL, workers, "/");
-  Pthread_create(&cids[1], NULL, workers, "/");
-  Pthread_create(&cids[2], NULL, workers, "output.cgi");
-  Pthread_create(&cids[3], NULL, workers, "/");
+  Pthread_create(&cids[0], NULL, workers, "/output.cgi?3");
+  sleep(1);
+  Pthread_create(&cids[2], NULL, workers, "/2.cgi?2");
+  Pthread_create(&cids[3], NULL, workers, "/1.cgi?1");
 
 
   int i;
