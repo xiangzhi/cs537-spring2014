@@ -22,6 +22,7 @@
  */
 
 #include "cs537.h"
+ #include "Pthread.h"
 
 /*
  * Send an HTTP request for the specified file 
@@ -37,6 +38,7 @@ void clientSend(int fd, char *filename)
   sprintf(buf, "GET %s HTTP/1.1\n", filename);
   sprintf(buf, "%shost: %s\n\r\n", buf, hostname);
   Rio_writen(fd, buf, strlen(buf));
+  Rio_writen(1, buf, strlen(buf));
 }
   
 /*
@@ -71,22 +73,39 @@ void clientPrint(int fd)
   }
 }
 
+void* workers(void* _filename){
+  char* filename = (char*) _filename;
+  printf("file:%s\n", filename);
+  int clientfd = Open_clientfd("localhost", 8559);
+  clientSend(clientfd, filename);
+  clientPrint(clientfd);
+  Close(clientfd);  
+  return NULL;
+}
+
 int main(int argc, char *argv[])
 {
-  char *host, *filename;
-  int port;
-  int clientfd;
-
   if (argc != 4) {
     fprintf(stderr, "Usage: %s <host> <port> <filename>\n", argv[0]);
     exit(1);
   }
 
-  host = argv[1];
-  port = atoi(argv[2]);
-  filename = argv[3];
+  int num = 4;
+  pthread_t* cids = (pthread_t*) malloc(sizeof(pthread_t) * num);
 
-  /* Open a single connection to the specified host and port */
+
+  Pthread_create(&cids[0], NULL, workers, "test.html");
+  Pthread_create(&cids[1], NULL, workers, "test.html");
+  Pthread_create(&cids[2], NULL, workers, "bigtest.html");
+  Pthread_create(&cids[3], NULL, workers, "test.html");
+
+
+  int i;
+  for(i = 0; i < num; i++){
+    Pthread_join(cids[i], NULL);
+  }
+
+  /* Open a single connection to the specified host and port 
   int i;
   for(i = 0; i < 10000; i++){
     clientfd = Open_clientfd(host, port);
@@ -96,6 +115,7 @@ int main(int argc, char *argv[])
       
     Close(clientfd);    
   }
+  */
 
 
   exit(0);

@@ -17,8 +17,8 @@ all: server client output.cgi
 server: server.o request.o cs537.o Pthread.o
 	$(CC) $(CFLAGS) -o server server.o request.o cs537.o Pthread.o $(LIBS)
 
-client: client.o cs537.o
-	$(CC) $(CFLAGS) -o client client.o cs537.o
+client: client.o cs537.o Pthread.o
+	$(CC) $(CFLAGS) -o client client.o cs537.o Pthread.o
 
 output.cgi: output.c
 	$(CC) $(CFLAGS) -o output.cgi output.c

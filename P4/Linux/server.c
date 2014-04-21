@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         }
         //read the http header first
         http_info info = readHeader(connfd);
-
+        printf("incoming path:%s\n", info.uri);
         switch(mode){
             case 0:
                 buffer[fillptr] = info;
@@ -145,7 +145,7 @@ void serverParseURI(http_info* info)
    if (!strstr(info->uri, "cgi")) {
       // static
       strcpy(info->cgiargs, "");
-      sprintf(info->filename, ".%s", info->uri);
+      sprintf(info->filename, "%s", info->uri);
       if (info->uri[strlen(info->uri)-1] == '/') {
          strcat(info->filename, "home.html");
       }
@@ -225,7 +225,10 @@ void* worker(){
         request++;
 
         Pthread_cond_signal(&cond_empty);
-        //printf("PID:%u, request:%d,Handling request\n", pthread_self(), request);
+        printf("PID:%u, request:%d,Handling request\n", (unsigned int)pthread_self(), request);
+        printf("path:%s\n", info.uri);
+        //printf("filename:%s\n", info.filename);
+        //printf("isStatic:%d\n", info.is_static);
         Pthread_mutex_unlock(&mutex);   
         //done handling
         //handle request
@@ -251,7 +254,6 @@ void copyInfo(http_info* src, http_info* dest){
 //qsort function when it is the shortest file name first
 int sfnfCompare(const void* p1, const void* p2){
     int num = strlen(((http_info*)p1)->filename) - strlen(((http_info*)p2)->filename);
-    printf("number");
     return num;
 }
 

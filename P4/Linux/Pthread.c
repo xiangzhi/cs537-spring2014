@@ -1,8 +1,16 @@
 //wrapper function for pthread
 #include "Pthread.h"
 
-int Pthread_create(pthread_t *thread, const pthread_attr_t *attr, void* routine, void *arg){
-    return pthread_create(thread, attr, routine,arg);
+void Pthread_create(pthread_t *thread, const pthread_attr_t *attr, void* routine, void *arg){
+    if(pthread_create(thread, attr, routine,arg) != 0){
+        ErrorDisplay("pthread_create");
+    }
+}
+
+void Pthread_join(pthread_t thread, void ** arg){
+    if(pthread_join(thread, arg) != 0){
+        ErrorDisplay("pthread_join");
+    }
 }
 
 int Pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr){

@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int Pthread_create(pthread_t *thread, const pthread_attr_t *attr, void* routine, void *arg);
+void Pthread_create(pthread_t *thread, const pthread_attr_t *attr, void* routine, void *arg);
+void Pthread_join(pthread_t thread, void** arg);
 void Pthread_mutex_lock(pthread_mutex_t *mutex);
 int Pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 void Pthread_mutex_unlock(pthread_mutex_t *mutex);
