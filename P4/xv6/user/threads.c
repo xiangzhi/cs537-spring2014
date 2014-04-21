@@ -36,6 +36,7 @@ int thread_create(void (*fcn) (void*), void *arg) {
 int thread_join() {
   
   void * stack;
+
   return join(&stack);
 }
 

@@ -136,7 +136,7 @@ int join(void **stack) {
       if(p->state == ZOMBIE && p->thread == 1){
         // Found one.
         pid = p->pid;
-        kfree(p->kstack);
+        //kfree(p->kstack);
         p->kstack = 0;
         //freevm(p->pgdir);
         p->state = UNUSED;
@@ -157,8 +157,8 @@ int join(void **stack) {
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
-  //return 0;
-  }
+	}
+  return 0;
 }
 
 int clone(void *fcn, void* arg, void* stack) {
@@ -169,23 +169,68 @@ int clone(void *fcn, void* arg, void* stack) {
       return -1;
   }
 
+  if ((np->kstack = kalloc()) == 0) {
+    np->state = UNUSED;
+    return -1;
+  }
+  
+  cprintf("Address of stack: %p\n", stack);
+  cprintf("Inside proc ARG: %d\n", *(int *)arg);
+  cprintf("Inside proc Addr of arg: %p\n", arg);
     np->pgdir = proc->pgdir;
     np->sz = proc->sz;
     np->parent = proc;
-
+    
+    memmove(np->tf, proc->tf, sizeof(*np->tf));
+    
     void *stackBtm;
+    void *stkArg;
+    void *stkBadRet;
     int pid;
     pid = np->pid;
-
+    // Figured it out, Stack is a malloced area of code not included in the 
+    // original proccess.  So after messing with stack, we need to copy the
+    // new stack into the parent proccesses address space.  
+    
+    np->tf->esp = (uint) stack;
+    
     stackBtm =stack + 4096;
-    *(uint *)(((char *) stackBtm) - 2 * sizeof(void *)) = 0xffffffff;
-    *((uint *)((char *) stackBtm) - sizeof(void *)) = (uint) arg;
+    stkArg = stackBtm - sizeof(void *);
+    stkBadRet = stackBtm - 2 * sizeof(void *);
+    uint tmp = *(uint *)arg;
+    //*(uint *)(((char *) stackBtm) - 2 * sizeof(void *)) = 0xffffffff;
+    //*((uint *)((char *) stackBtm) - sizeof(void *)) = (uint) arg;
+    *(uint *)stkArg = tmp;
+    *(uint *)stkBadRet = 0xffffffff;
     // put an old base pointer on the stack?
-		np->tf->esp = (uint)(((char *) stackBtm) - 2 * sizeof(void *));
+    if (((uint)stkArg) % 4 != 0) {
+      cprintf("Misaligned addr space");
+    }
+    copyout(np->pgdir, np->tf->esp, stack, PGSIZE);
+    
+    np->tf->esp += PGSIZE - 2 * sizeof(void *);
     np->tf->eip = (uint)fcn;
     np->tf->ebp = np->tf->esp;
-		np->thread = 1;
-		np->state = RUNNABLE;
+    np->tf->eax = 0;
+    
+    cprintf("base pointer: %p\n", np->tf->ebp);
+    cprintf("value at SP + word: %d\n", *((uint *)np->tf->esp + 1));
+    cprintf("Value at bottom of stack: %d\n", *(uint *)(stack + PGSIZE - sizeof(void *)));
+    cprintf("Value at top of btm of stack: %d\n", *(int *)(stack + PGSIZE - 2*sizeof(void *)));
+    
+    int i;
+    for (i = 0; i < NOFILE; i ++) {
+      if (proc->ofile[i]) {
+	np->ofile[i] = filedup(proc->ofile[i]);
+      }
+    }
+    
+    np->cwd = idup(proc->cwd);
+
+    np->thread = 1;
+    np->state = RUNNABLE;
+    safestrcpy(np->name, proc->name, sizeof(proc->name));
+    //cprintf("end %d\n", pid);
     return pid;
 }
 

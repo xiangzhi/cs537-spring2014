@@ -40,9 +40,9 @@ int sys_clone(void) {
   
   fcn = (void *) _fcn;
   arg = (void *) _arg;
-  stk = (void *) _stk;
-  
-  return 0;
+  stk = (void *) _stk;  
+ 
+  return clone(fcn, arg, stk);
 }
 
 int sys_join(void) {
