@@ -94,10 +94,10 @@ int main(int argc, char *argv[])
   pthread_t* cids = (pthread_t*) malloc(sizeof(pthread_t) * num);
 
 
-  Pthread_create(&cids[0], NULL, workers, "\\");
-  Pthread_create(&cids[1], NULL, workers, "\\");
+  Pthread_create(&cids[0], NULL, workers, "/");
+  Pthread_create(&cids[1], NULL, workers, "/");
   Pthread_create(&cids[2], NULL, workers, "output.cgi");
-  Pthread_create(&cids[3], NULL, workers, "\\");
+  Pthread_create(&cids[3], NULL, workers, "/");
 
 
   int i;
