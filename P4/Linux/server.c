@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         }
         //read the http header first
         http_info info = readHeader(connfd);
-        printf("incoming path:%s\n", info.uri);
+
         switch(mode){
             case 0:
                 buffer[fillptr] = info;
@@ -145,7 +145,7 @@ void serverParseURI(http_info* info)
    if (!strstr(info->uri, "cgi")) {
       // static
       strcpy(info->cgiargs, "");
-      sprintf(info->filename, "%s", info->uri);
+      sprintf(info->filename, ".%s", info->uri);
       if (info->uri[strlen(info->uri)-1] == '/') {
          strcat(info->filename, "home.html");
       }
@@ -226,8 +226,8 @@ void* worker(){
 
         Pthread_cond_signal(&cond_empty);
         printf("PID:%u, request:%d,Handling request\n", (unsigned int)pthread_self(), request);
-        printf("path:%s\n", info.uri);
-        //printf("filename:%s\n", info.filename);
+        //printf("path:%s\n", info.uri);
+        //printf("filename:%s\n", info.filename;
         //printf("isStatic:%d\n", info.is_static);
         Pthread_mutex_unlock(&mutex);   
         //done handling
