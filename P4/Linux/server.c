@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
         }
         //read the http header first
         http_info info = readHeader(connfd);
-        printf("Incoming file:%s\n",info.filename);
+        //printf("Incoming file:%s\n",info.filename);
 
         switch(mode){
             case 0:
@@ -237,7 +237,7 @@ void* worker(){
         Pthread_cond_signal(&cond_empty);
         //printf("PID:%u, request:%d,Handling request\n", (unsigned int)pthread_self(), request);
         //printf("path:%s\n", info.uri);
-        printf("filename:%s\n", info.filename);
+        //printf("filename:%s\n", info.filename);
         //printf("isStatic:%d\n", info.is_static);
         Pthread_mutex_unlock(&mutex);   
         //done handling
