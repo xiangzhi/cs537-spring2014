@@ -132,11 +132,17 @@ int join(void **stack) {
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->parent != proc)
         continue;
+			if(p->thread != 1) 
+				continue;
       havekids = 1;
       if(p->state == ZOMBIE && p->thread == 1){
         // Found one.
         pid = p->pid;
-        //kfree(p->kstack);
+
+				void *addr = PGROUNDDOWN(p->tf->esp);
+				copyout(proc->pgdir, (uint)stack, &addr, sizeof(void *));
+
+        kfree(p->kstack);
         p->kstack = 0;
         //freevm(p->pgdir);
         p->state = UNUSED;
@@ -158,34 +164,39 @@ int join(void **stack) {
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
 	}
-  return 0;
+	return pid;
 }
 
 int clone(void *fcn, void* arg, void* stack) {
 
   struct proc *np;
 
+	if ((int)stack % PGSIZE != 0) {
+		cprintf("a");
+		return -1;
+	}
+
+	if (proc->sz - (int)stack < PGSIZE) {
+		cprintf("b");
+		return -1;
+	}
+
   if ((np = allocproc()) == 0) {
+			cprintf("c");
       return -1;
   }
 
-  if ((np->kstack = kalloc()) == 0) {
-    np->state = UNUSED;
-    return -1;
-  }
-  
-  cprintf("Address of stack: %p\n", stack);
-  cprintf("Inside proc ARG: %d\n", *(int *)arg);
-  cprintf("Inside proc Addr of arg: %p\n", arg);
+  //if ((np->kstack = kalloc()) == 0) {
+    //np->state = UNUSED;
+    //return -1;
+  //}
+
     np->pgdir = proc->pgdir;
     np->sz = proc->sz;
     np->parent = proc;
     
     memmove(np->tf, proc->tf, sizeof(*np->tf));
     
-    void *stackBtm;
-    void *stkArg;
-    void *stkBadRet;
     int pid;
     pid = np->pid;
     // Figured it out, Stack is a malloced area of code not included in the 
@@ -193,34 +204,21 @@ int clone(void *fcn, void* arg, void* stack) {
     // new stack into the parent proccesses address space.  
     
     np->tf->esp = (uint) stack;
-    
-    stackBtm =stack + 4096;
-    stkArg = stackBtm - sizeof(void *);
-    stkBadRet = stackBtm - 2 * sizeof(void *);
 		uint temp = 0xffffffff;    
-    // put an old base pointer on the stack?
-    
-    if (((uint)stkArg) % 4 != 0) {
-      cprintf("Misaligned addr space");
-    }
 
-    int a = copyout(np->pgdir, (uint)stack + PGSIZE - 2 * sizeof(void *), &temp, sizeof(temp));
-		copyout(np->pgdir, (uint)stack + PGSIZE - sizeof(void *), arg, sizeof(void *));
-    cprintf("Value of a: %d\n", a);
+		copyout(np->pgdir, (uint)stack + PGSIZE - 2 * sizeof(void *), &temp, sizeof(temp));
+		copyout(np->pgdir, (uint)stack + PGSIZE - sizeof(void *), &arg, sizeof(void *));
+
     np->tf->esp += PGSIZE - 2 * sizeof(void *);
     np->tf->eip = (uint)fcn;
     np->tf->ebp = np->tf->esp;
     np->tf->eax = 0;
     
-    cprintf("base pointer: %p\n", np->tf->ebp);
-    cprintf("value at SP + word: %d\n", *((uint *)np->tf->esp + 1));
-    cprintf("Value at bottom of stack: %d\n", *(uint *)(stack + PGSIZE - sizeof(void *)));
-    cprintf("Value at top of btm of stack: %d\n", *(int *)(stack + PGSIZE - 2*sizeof(void *)));
     
     int i;
     for (i = 0; i < NOFILE; i ++) {
       if (proc->ofile[i]) {
-	np->ofile[i] = filedup(proc->ofile[i]);
+				np->ofile[i] = filedup(proc->ofile[i]);
       }
     }
     
@@ -229,7 +227,7 @@ int clone(void *fcn, void* arg, void* stack) {
     np->thread = 1;
     np->state = RUNNABLE;
     safestrcpy(np->name, proc->name, sizeof(proc->name));
-    //cprintf("end %d\n", pid);
+
     return pid;
 }
 
@@ -329,6 +327,8 @@ wait(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->parent != proc)
         continue;
+			if(p->thread == 1)
+				continue;
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
