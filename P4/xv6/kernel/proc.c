@@ -197,21 +197,16 @@ int clone(void *fcn, void* arg, void* stack) {
     stackBtm =stack + 4096;
     stkArg = stackBtm - sizeof(void *);
     stkBadRet = stackBtm - 2 * sizeof(void *);
-    uint tmp = *(uint *)arg;
-    
-    //*(uint *)(((char *) stackBtm) - 2 * sizeof(void *)) = 0xffffffff;
-    //*((uint *)((char *) stackBtm) - sizeof(void *)) = (uint) arg;
-    
-    *(uint *)stkArg = tmp;
-    *(uint *)stkBadRet = 0xffffffff;
-    
+		uint temp = 0xffffffff;    
     // put an old base pointer on the stack?
     
     if (((uint)stkArg) % 4 != 0) {
       cprintf("Misaligned addr space");
     }
-    copyout(np->pgdir, np->tf->esp, stack, PGSIZE);
-    
+
+    int a = copyout(np->pgdir, (uint)stack + PGSIZE - 2 * sizeof(void *), &temp, sizeof(temp));
+		copyout(np->pgdir, (uint)stack + PGSIZE - sizeof(void *), arg, sizeof(void *));
+    cprintf("Value of a: %d\n", a);
     np->tf->esp += PGSIZE - 2 * sizeof(void *);
     np->tf->eip = (uint)fcn;
     np->tf->ebp = np->tf->esp;
