@@ -12,7 +12,7 @@ int lock_init(lock_t *lock) {
   return 0;
 }
 
-int lock_aquire(lock_t *lock) {
+int lock_acquire(lock_t *lock) {
   if (lock == NULL) {
     return -1;
   }
@@ -36,7 +36,9 @@ int thread_create(void (*fcn) (void*), void *arg) {
 int thread_join() {
   
   void * stack;
-  return join(&stack);
+	int rtn = join(&stack);
+	free(stack);
+  return rtn;
 }
 
 int cv_wait(cond_t *cv, lock_t *lock) {
@@ -48,6 +50,6 @@ int cv_wait(cond_t *cv, lock_t *lock) {
 }
 
 int cv_signal(cond_t *cv){
-
+	//cond_signal sys call
 	return 0;
 }

@@ -37,17 +37,27 @@ int sys_clone(void) {
   if (argint(2, &_stk) < 0) {
     return -1;
   }
-  
+	
   fcn = (void *) _fcn;
   arg = (void *) _arg;
-  stk = (void *) _stk;
-  
-  return 0;
+  stk = (void *) _stk;  
+ 
+  return clone(fcn, arg, stk);
 }
 
 int sys_join(void) {
+	void **stk;
+	int _stk;
+	int rtn;
 
-  return 0;
+	if (argint(0, &_stk) < 0) return -1;
+	
+	if (_stk % 4 != 0) return -1;	
+
+	stk = (void **) _stk;
+
+	rtn = join(stk);
+  return rtn;
 }
 
 int

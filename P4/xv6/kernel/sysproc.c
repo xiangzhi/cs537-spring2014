@@ -27,22 +27,25 @@ int sys_clone(void) {
   int _stk;
 
   if(argint(0, &_fcn) < 0) {
+		cprintf("z");
     return -1;
   }
 
   if (argint(1, &_arg) < 0) {
+		cprintf("y");
     return -1;
   }
 
   if (argint(2, &_stk) < 0) {
+		cprintf("u");
     return -1;
   }
-  
+	
   fcn = (void *) _fcn;
   arg = (void *) _arg;
-  stk = (void *) _stk;
-  
-  return 0;
+  stk = (void *) _stk;  
+ 
+  return clone(fcn, arg, stk);
 }
 
 int sys_join(void) {
@@ -50,7 +53,10 @@ int sys_join(void) {
 	int _stk;
 	int rtn;
 
-	_stk = argint(0, &_stk);
+	if (argint(0, &_stk) < 0) return -1;
+	
+	if (_stk % 4 != 0) return -1;	
+
 	stk = (void **) _stk;
 
 	rtn = join(stk);

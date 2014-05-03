@@ -27,16 +27,16 @@ int lock_release(lock_t *lock) {
 }
 
 int thread_create(void (*fcn) (void*), void *arg) {
-  void * stack;
-  uint size = 4096;
-  stack = malloc(size);
+  void * stack = malloc(4096);
   return clone(fcn, arg, stack);
 } 
 
 int thread_join() {
   
   void * stack;
-  return join(&stack);
+	int rtn = join(&stack);
+	free(stack);
+  return rtn;
 }
 
 int cv_wait(cond_t *cv, lock_t *lock) {

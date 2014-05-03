@@ -132,13 +132,19 @@ int join(void **stack) {
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->parent != proc)
         continue;
+			if(p->thread != 1) 
+				continue;
       havekids = 1;
       if(p->state == ZOMBIE && p->thread == 1){
         // Found one.
         pid = p->pid;
+
+				void *addr = PGROUNDDOWN(p->tf->esp);
+				copyout(proc->pgdir, (uint)stack, &addr, sizeof(void *));
+
         kfree(p->kstack);
         p->kstack = 0;
-        freevm(p->pgdir);
+        //freevm(p->pgdir);
         p->state = UNUSED;
         p->pid = 0;
         p->parent = 0;
@@ -157,35 +163,71 @@ int join(void **stack) {
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
-  //return 0;
-  }
+	}
+	return pid;
 }
 
 int clone(void *fcn, void* arg, void* stack) {
 
   struct proc *np;
 
+	if ((int)stack % PGSIZE != 0) {
+		cprintf("a");
+		return -1;
+	}
+
+	if (proc->sz - (int)stack < PGSIZE) {
+		cprintf("b");
+		return -1;
+	}
+
   if ((np = allocproc()) == 0) {
+			cprintf("c");
       return -1;
   }
+
+  //if ((np->kstack = kalloc()) == 0) {
+    //np->state = UNUSED;
+    //return -1;
+  //}
 
     np->pgdir = proc->pgdir;
     np->sz = proc->sz;
     np->parent = proc;
-
-    void *stackBtm;
+    
+    memmove(np->tf, proc->tf, sizeof(*np->tf));
+    
     int pid;
     pid = np->pid;
+    // Figured it out, Stack is a malloced area of code not included in the 
+    // original proccess.  So after messing with stack, we need to copy the
+    // new stack into the parent proccesses address space.  
+    
+    np->tf->esp = (uint) stack;
+		uint temp = 0xffffffff;    
 
-    stackBtm =stack + 4096;
-    *(uint *)(((char *) stackBtm) - 2 * sizeof(void *)) = 0xffffffff;
-    *((uint *)((char *) stackBtm) - sizeof(void *)) = (uint) arg;
-    // put an old base pointer on the stack?
-		np->tf->esp = (uint)(((char *) stackBtm) - 2 * sizeof(void *));
+		copyout(np->pgdir, (uint)stack + PGSIZE - 2 * sizeof(void *), &temp, sizeof(temp));
+		copyout(np->pgdir, (uint)stack + PGSIZE - sizeof(void *), &arg, sizeof(void *));
+
+    np->tf->esp += PGSIZE - 2 * sizeof(void *);
     np->tf->eip = (uint)fcn;
     np->tf->ebp = np->tf->esp;
-		np->thread = 1;
-		np->state = RUNNABLE;
+    np->tf->eax = 0;
+    
+    
+    int i;
+    for (i = 0; i < NOFILE; i ++) {
+      if (proc->ofile[i]) {
+				np->ofile[i] = filedup(proc->ofile[i]);
+      }
+    }
+    
+    np->cwd = idup(proc->cwd);
+
+    np->thread = 1;
+    np->state = RUNNABLE;
+    safestrcpy(np->name, proc->name, sizeof(proc->name));
+
     return pid;
 }
 
@@ -285,6 +327,8 @@ wait(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->parent != proc)
         continue;
+			if(p->thread == 1)
+				continue;
       havekids = 1;
       if(p->state == ZOMBIE){
         // Found one.
