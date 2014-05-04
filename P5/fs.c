@@ -126,17 +126,19 @@ void fs_print(){
         //read the whole are
         read(disk_fd, &map, sizeof(iMap));
         for(int j = 0; j < 16; j++){
-            if(map.ptr[j] == -1){
+            //printf("location:%d\n", map.ptr[j]);
+
+            if(map.ptr[j] < -1){
                 continue;
             }
             iNode node;
-            //printf("location:%d\n", map.ptr[j]);
             lseek(disk_fd,map.ptr[j], SEEK_SET);
             read(disk_fd, &node, sizeof(iNode));
+            printf("size:%d, type:%d\n",node.size, node.type);
+
             if(node.type != 1 && node.type != 0){
                 break;
             }
-            printf("size:%d, type:%d\n",node.size, node.type);
             if(node.type == 0){
                 int counter = node.size;
                 int k = 0;

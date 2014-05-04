@@ -23,8 +23,8 @@ typedef struct _iMap{
 
 
 typedef struct _iNode{
-    int type;
     int size;
+    int type;
     int dataPtrs[14];
 }iNode;
 
