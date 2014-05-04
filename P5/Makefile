@@ -23,7 +23,7 @@ fs.o: fs.c fs.h
 	$(CC) -c -fpic fs.c fs.h $(CFLAGS)
 
 clean:
-	rm -f server client *.so *.o
+	rm -f server client *.so *.o *.gch
 
 
 
