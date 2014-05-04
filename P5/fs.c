@@ -127,8 +127,7 @@ void fs_print(){
         read(disk_fd, &map, sizeof(iMap));
         for(int j = 0; j < 16; j++){
             //printf("location:%d\n", map.ptr[j]);
-
-            if(map.ptr[j] < -1){
+            if(map.ptr[j] < 0){
                 continue;
             }
             iNode node;
