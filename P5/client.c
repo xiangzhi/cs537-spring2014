@@ -31,7 +31,7 @@ main(int argc, char *argv[])
 	printf("CLIENT:: read %d bytes (message: '%s')\n", rc, buffer);
     }
     */
-    MFS_Init("localhost", 7997);
+    MFS_Init("localhost", 7997);/*
     int rtn = MFS_Lookup(99, "test.rr");
     printf("return %d\n", rtn);
     MFS_Stat_t stat;
@@ -46,7 +46,7 @@ main(int argc, char *argv[])
     rtn = MFS_Creat(99, 1, "yolo");
     printf("return from creat:%d\n", rtn);
     rtn = MFS_Unlink(79,"yooooso");
-    printf("return from unlink:%d\n", rtn);
+    printf("return from unlink:%d\n", rtn);*/
     MFS_Shutdown();
     return 0;
 }

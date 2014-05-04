@@ -276,10 +276,8 @@ void fs_fsync(){
     lseek(disk_fd, 0, SEEK_SET);
     //write back the critical region
     int stat = 0;
-    while(stat != 4096){
-        write(disk_fd, &cp, sizeof(checkPoint));
-    }
-    fs_fsync(disk_fd);
+    stat = write(disk_fd, &cp, sizeof(checkPoint));
+    fsync(disk_fd);
 }
 
 //lookup the filename at the parent directory given by pinum

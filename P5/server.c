@@ -144,6 +144,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
         case 'E':
             printf("Shutdown Called\n");
             fs_close();
+            printf("fs closed\n");
             //tell the other side, the operation is completed
             snprintf(returnBuffer,4096, "0");
             UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
