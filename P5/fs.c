@@ -163,7 +163,7 @@ void fs_print(){
                 }
                 lseek(disk_fd, node.dataPtrs[k], SEEK_SET);
                 read(disk_fd, writePtr, (uint)counter);
-                printf("%s", ptr);
+                printf("%p", ptr);
             }
         }
     }

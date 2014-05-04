@@ -1,5 +1,5 @@
 CC   = gcc
-CFLAGS = -Wall -Werror -m32
+CFLAGS = -Wall -Werror -m32 -std=gnu99
 
 FSLIBS = -lfs
 
