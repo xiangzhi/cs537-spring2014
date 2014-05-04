@@ -81,9 +81,8 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             pinum = atoi(strtok(NULL, ":"));
             name = strtok(NULL, ":");
             printf("pi:%d, name:%s\n", pinum, name);
-
-            //int rtn = fs_lookup(pinum, name);
-
+            rtn = fs_lookup(pinum, name);
+            fs_fsync();
             sprintf(output, "%d", 100);
             break;
         case 'C':
@@ -92,7 +91,8 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             type = atoi(strtok(NULL, ":"));
             name = strtok(NULL, ":");      
             printf("pi:%d, type:%d, name:%s\n", pinum, type, name);
-            rtn = fs_create(pinum, type, name);    
+            rtn = fs_create(pinum, type, name);   
+            fs_fsync(); 
             snprintf(output, 4096, "%d", rtn); 
             break;
         case 'R':
@@ -106,12 +106,14 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
                 sprintf(returnBuffer, "%d", rtn);  
                 status = UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
                 status = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
+                fs_fsync();
                 memcpy(output, data, 4096);
 
             }
             else{
                 printf("read failed\n");
                 snprintf(output, 4096, "%d", rtn);
+                fs_fsync();
             }
             printf("inum:%d, block:%d, buffer:%s", inum, block, data);           
             break;
@@ -127,17 +129,16 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             status = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
             printf("inum:%d, block:%d, buffer:%s", inum, block, buffer);
             rtn = fs_write(inum, buffer, block);
+            fs_fsync();
             sprintf(output, "%d", rtn);
             break;
         case 'S':
             printf("Stat Called\n");
             inum = atoi(strtok(NULL, ":"));
             printf("pi:%d\n", inum);
-
             stat_t stat;
-            stat.type = 1;
-            stat.size = 256;
-            //fs_stat(inum, &stat);
+            fs_stat(inum, &stat);
+            fs_fsync();
             memcpy(output, &stat, 4096);
             break;
         case 'E':
@@ -145,7 +146,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             fs_close();
             //tell the other side, the operation is completed
             snprintf(returnBuffer,4096, "0");
-            UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);  
+            UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
             //end program          
             exit(0);
         case 'U':
@@ -155,7 +156,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             printf("pi:%d, name:%s\n", inum, name);
 
             rtn = fs_unlink(inum, name);
-
+            fs_fsync();
             sprintf(output, "%d", rtn);
             break;
         default:

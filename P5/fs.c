@@ -133,12 +133,10 @@ int fs_unlink(int pinum, char *name){
 }
 
 int fs_close(){
-    lseek(disk_fd, 0, SEEK_SET);
-    //write back the critical region
-    int stat = write(disk_fd, &cp, sizeof(checkPoint));
+    fs_fsync();
     close(disk_fd);
     //done
-    return stat;
+    return 0;
 }
 
 int fs_create(int pinum,  int type, char *name){
@@ -274,6 +272,15 @@ int fs_stat(int inum, stat_t *m){
     return 0;
 }
 
+void fs_fsync(){
+    lseek(disk_fd, 0, SEEK_SET);
+    //write back the critical region
+    int stat = 0;
+    while(stat != 4096){
+        write(disk_fd, &cp, sizeof(checkPoint));
+    }
+    fs_fsync(disk_fd);
+}
 
 //lookup the filename at the parent directory given by pinum
 // - pinum: parent's inode number

@@ -56,6 +56,7 @@ int fs_write(int inum, char *buffer, int block);
 int fs_read(int inum, char *buffer, int block);
 int fs_unlink(int pinum, char *name);
 
+void fs_fsync();
 void fs_print();
 
 #endif
