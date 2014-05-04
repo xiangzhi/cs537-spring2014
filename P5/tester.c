@@ -1,7 +1,7 @@
 #include "fs.h"
 #include <stdio.h>
 
-void fs_init(char* filename);
+int fs_init(char* filename);
 int fs_lookup(int pinum, char *name);
 int fs_close();
 int fs_stat(int inum, stat_t *m);

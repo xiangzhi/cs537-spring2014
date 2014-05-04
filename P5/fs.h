@@ -42,7 +42,7 @@ typedef struct _dir_list{
     fs_dir list[64];
 }fs_dir_list;
 
-void fs_init(char* filename);
+int fs_init(char* filename);
 
 int fs_close();
 

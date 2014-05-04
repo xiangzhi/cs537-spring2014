@@ -18,7 +18,7 @@ void copyMap(iMap* node1, iMap* node2);
 void insertINode(iNode node, int inum);
 void createEmptyFile(int pinum);
 
-void fs_init(char* fileName){
+int fs_init(char* fileName){
 
     //check whether the file access
     if( access(fileName, F_OK) != -1 ){
@@ -28,20 +28,27 @@ void fs_init(char* fileName){
         disk_fd = open(fileName, O_RDWR|O_APPEND,S_IRWXU);
         if(disk_fd < 0){
             fprintf(stderr,"Error: Cannot open file %s\n",fileName);
-            exit(1);
+            return -1;
         }
 
         //read the checkpoint region
         int sum = read(disk_fd, &cp, sizeof(checkPoint));
         if(sum != sizeof(checkPoint)){
             fprintf(stderr,"Error: Unable to read checkPoint region\n");
-            exit(1);
+            return -1;
         }
     }
     else{
         //file doesn't exist
         //create the new file
         disk_fd = open(fileName, O_RDWR|O_CREAT,S_IRWXU);
+
+        //make sure we can create the file
+        if(disk_fd < 0){
+            fprintf(stderr,"Error: Cannot create file\n");
+            return -1;
+        }
+
         //initialize the checkpoint region
         //create the first inode
         cp.endPtr = 4096; //0-4095 is the CR
@@ -53,7 +60,7 @@ void fs_init(char* fileName){
     for(int j = 0; j < 100; j++){
         printf("num:%d, return%d\n", j, getMapEntryNum(j));
     }*/
-
+    return 0;
     //fs_print();
 }
 
