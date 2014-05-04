@@ -21,9 +21,10 @@ typedef struct _iMap{
     int ptr[16];
 }iMap;
 
+
 typedef struct _iNode{
-    int size;
     int type;
+    int size;
     int dataPtrs[14];
 }iNode;
 
