@@ -68,6 +68,7 @@ void fs_init(char* fileName){
 
     }
     fs_print();
+    fs_close();
 }
 
 int fs_close(){
