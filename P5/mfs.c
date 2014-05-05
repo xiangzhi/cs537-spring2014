@@ -180,11 +180,14 @@ int udp_Send(char* sendMsg, char* reply, bool wait){
             write(1,str,strlen(str));
             struct sockaddr_in raddr;
             status = UDP_Read(send_fd, &raddr, reply, BUFFER_SIZE);
+            return 0;
+            /*
             if(status != BUFFER_SIZE){
                 continue;
             }
             //printf("CLIENT:: read %d bytes (message: '%s')\n", status, reply);
             break;
+            */
         }
         else{
             if(!wait){
