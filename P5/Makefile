@@ -1,24 +1,22 @@
 CC   = gcc
-CFLAGS = -Wall -Werror -m32 -std=gnu99
+CFLAGS = -Wall -Werror -std=gnu99
 
-FSLIBS = -lfs
+#use to compile on Mac
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    CFLAGS += -m32
+endif
+
 MFSLIBS = -lmfs
 
-all: server client libfs.so tester.o libmfs.so
-
-#tester removed this
-tester.o: tester.c libfs.so
-	$(CC) -o tester.o tester.c $(CFLAGS) -L. $(FSLIBS)
+all: server libmfs.so client
 
 # this generates the target executables
-server: server.o udp.o libfs.so
-	$(CC) -o server server.o udp.o $(CFLAGS) -L. $(FSLIBS)
+server: server.o udp.o fs.o
+	$(CC) -o server server.o udp.o fs.o $(CFLAGS)
 
-client: client.o libmfs.so
-	$(CC) -o client client.o $(CFLAGS)  -L. $(MFSLIBS)
-
-libfs.so: fs.o
-	$(CC) -shared -o libfs.so fs.o $(CFLAGS)
+client: client.o
+	$(CC) -o client client.o udp.o -L. $(CFLAGS) $(MFSLIBS)
 
 fs.o: fs.c fs.h
 	$(CC) -c -fpic fs.c fs.h $(CFLAGS)

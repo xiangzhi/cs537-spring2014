@@ -35,7 +35,6 @@ int MFS_Lookup(int pinum, char *name){
     char reply[BUFFER_SIZE];
     snprintf(message, BUFFER_SIZE, "L:%d:%s", pinum, name);
     udp_Send(message, reply);
-    printf("reply:%s", reply);
     return atoi(reply);
 }
 
@@ -106,7 +105,8 @@ int MFS_Read(int inum, char *buffer, int block){
 int MFS_Creat(int pinum, int type, char *name){
 
     //make sure the input is valid;
-    if(pinum < 0 || strlen(name) >= 60 || type != 0 || type != 1){
+    if(pinum < 0 || strlen(name) >= 60 || type > 1 || type < 0){
+        printf("invalid input");
         return -1;
     }
 
@@ -152,18 +152,18 @@ int udp_Send(char* sendMsg, char* reply){
     timeout.tv_usec = 0;
 
     while(true){
-        printf("sending\n");
+        //printf("sending\n");
         int status = UDP_Write(send_fd, &saddr, sendMsg, BUFFER_SIZE);
         if(status <= 0){
             printf("error in write\n");
             continue;
         }
-        printf("waiting\n");
+        //printf("waiting\n");
         status = select( send_fd +1, &readfd, &emptyfd, &emptyfd, &timeout);
         if(status == 1){
             struct sockaddr_in raddr;
             status = UDP_Read(send_fd, &raddr, reply, BUFFER_SIZE);
-            printf("CLIENT:: read %d bytes (message: '%s')\n", status, reply);
+            //printf("CLIENT:: read %d bytes (message: '%s')\n", status, reply);
             break;
         }
     }

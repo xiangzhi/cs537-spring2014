@@ -28,11 +28,11 @@ main(int argc, char *argv[])
     }
 
     //open port
-    printf("OpenningPort:%d\n",port);
+    printf("Open Port: %d\n",port);
     int sd = UDP_Open(port);
     //make sure th eport is able to open
     assert(sd > -1);
-    printf("SERVER:: waiting in loop\n");
+    //printf("SERVER:: waiting in loop\n");
 
     while (1) {
         struct sockaddr_in s;
@@ -40,7 +40,7 @@ main(int argc, char *argv[])
         char returnBuffer[BUFFER_SIZE];
         int rc = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
             if (rc > 0){
-                printf("SERVER:: read %d bytes (message: '%s')\n", rc, buffer);
+                //printf("SERVER:: read %d bytes (message: '%s')\n", rc, buffer);
                 int status = processConnection(buffer, returnBuffer, sd, s);
                 if(status != 0){
                     //ignore current command
@@ -73,36 +73,36 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
 
     switch(*pch){
         case 'I':
-            printf("firstConnect\n");
+            //printf("firstConnect\n");
             sprintf(output, "Initalized");
             break;
         case 'L':
-            printf("Lookup Called\n");
+            //printf("Lookup Called\n");
             pinum = atoi(strtok(NULL, ":"));
             name = strtok(NULL, ":");
-            printf("pi:%d, name:%s\n", pinum, name);
+            //printf("pi:%d, name:%s\n", pinum, name);
             rtn = fs_lookup(pinum, name);
             fs_fsync();
-            sprintf(output, "%d", 100);
+            sprintf(output, "%d", rtn);
             break;
         case 'C':
-            printf("Lookup Called\n");
+            //printf("Lookup Called\n");
             pinum = atoi(strtok(NULL, ":"));
             type = atoi(strtok(NULL, ":"));
             name = strtok(NULL, ":");      
-            printf("pi:%d, type:%d, name:%s\n", pinum, type, name);
+            //printf("pi:%d, type:%d, name:%s\n", pinum, type, name);
             rtn = fs_create(pinum, type, name);   
             fs_fsync(); 
             snprintf(output, 4096, "%d", rtn); 
             break;
         case 'R':
-            printf("Read Called\n");
+            //printf("Read Called\n");
             inum = atoi(strtok(NULL, ":"));
             block = atoi(strtok(NULL, ":"));
             char data[BUFFER_SIZE];
             rtn = fs_read(inum, data, block);
             if(rtn >= 0){
-                printf("read success\n");
+                //printf("read success\n");
                 sprintf(returnBuffer, "%d", rtn);  
                 status = UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
                 status = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
@@ -115,10 +115,10 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
                 snprintf(output, 4096, "%d", rtn);
                 fs_fsync();
             }
-            printf("inum:%d, block:%d, buffer:%s", inum, block, data);           
+            //printf("inum:%d, block:%d, buffer:%s", inum, block, data);           
             break;
         case 'W':
-            printf("Write Called\n");
+            //printf("Write Called\n");
             inum = atoi(strtok(NULL, ":"));
             block = atoi(strtok(NULL, ":"));
 
@@ -127,34 +127,34 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             status = UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
             //wait for their reply
             status = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
-            printf("inum:%d, block:%d, buffer:%s", inum, block, buffer);
+            //printf("inum:%d, block:%d, buffer:%s", inum, block, buffer);
             rtn = fs_write(inum, buffer, block);
             fs_fsync();
             sprintf(output, "%d", rtn);
             break;
         case 'S':
-            printf("Stat Called\n");
+            //printf("Stat Called\n");
             inum = atoi(strtok(NULL, ":"));
-            printf("pi:%d\n", inum);
+            //printf("pi:%d\n", inum);
             stat_t stat;
             fs_stat(inum, &stat);
             fs_fsync();
             memcpy(output, &stat, 4096);
             break;
         case 'E':
-            printf("Shutdown Called\n");
+            //printf("Shutdown Called\n");
             fs_close();
-            printf("fs closed\n");
+            //printf("fs closed\n");
             //tell the other side, the operation is completed
             snprintf(returnBuffer,4096, "0");
             UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
             //end program          
             exit(0);
         case 'U':
-            printf("Unlink Called\n");
+            //printf("Unlink Called\n");
             inum = atoi(strtok(NULL, ":"));
             name = strtok(NULL, ":");
-            printf("pi:%d, name:%s\n", inum, name);
+            //printf("pi:%d, name:%s\n", inum, name);
 
             rtn = fs_unlink(inum, name);
             fs_fsync();
