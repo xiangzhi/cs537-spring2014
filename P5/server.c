@@ -6,6 +6,7 @@
 #define BUFFER_SIZE (4096)
 
 int processConnection(char input[], char* output, int sd,struct sockaddr_in s);
+int udp_wait(char* reply, int sd, struct sockaddr_in s);
 
 int
 main(int argc, char *argv[])
@@ -105,7 +106,10 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
                 //printf("read success\n");
                 sprintf(returnBuffer, "%d", rtn);  
                 status = UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
-                status = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
+                int status = udp_wait(buffer,sd,s);
+                if(status == -1){
+                    return -1;
+                }
                 fs_fsync();
                 memcpy(output, data, 4096);
 
@@ -126,7 +130,10 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             snprintf(returnBuffer,4096, "0");
             status = UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
             //wait for their reply
-            status = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
+            int status = udp_wait(buffer,sd,s);
+            if(status == -1){
+                return -1;
+            }
             //printf("inum:%d, block:%d, buffer:%s", inum, block, buffer);
             rtn = fs_write(inum, buffer, block);
             fs_fsync();
@@ -169,3 +176,28 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
 }
 
 
+int udp_wait(char* reply, int sd, struct sockaddr_in s){
+    //initalize the varaibles
+    fd_set readfd;
+    fd_set emptyfd;
+    FD_ZERO(&emptyfd);
+    FD_ZERO(&readfd);
+    FD_SET(sd, &readfd);
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
+    //char* str = "waiting\n";
+    //write(1,str,strlen(str));
+    int rc = select( sd +1, &readfd, &emptyfd, &emptyfd, &timeout);
+    if(rc > 0 && FD_ISSET(sd, &readfd)){
+        //str = "receive\n";
+        //write(1,str,strlen(str));
+        int status = UDP_Read(sd, &s, reply, BUFFER_SIZE);
+        if(status != BUFFER_SIZE){
+            return -1;
+        }
+        return 0;
+    }
+    return -1;
+}

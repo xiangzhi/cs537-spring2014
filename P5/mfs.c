@@ -74,6 +74,7 @@ int MFS_Write(int inum, char *buffer, int block){
     if(atoi(reply) != 0){
         return -1;
     }
+
     udp_Send(buffer, reply);
     //make sure the reply is 0;//success
     if(atoi(reply) != 0){
@@ -99,6 +100,9 @@ int MFS_Read(int inum, char *buffer, int block){
     }
     snprintf(message, BUFFER_SIZE, "R:%d:%d:p2", inum, block);
     udp_Send(message, buffer);
+    //write(STDOUT_FILENO,buffer,strlen(buffer) + 1);
+    //write(STDOUT_FILENO,"\n",1);
+
     return 0;
 }
 
@@ -141,26 +145,32 @@ int MFS_Shutdown(){
 
 int udp_Send(char* sendMsg, char* reply){
 
-    //initalize the varaibles
-    fd_set readfd;
-    fd_set emptyfd;
-    FD_ZERO(&emptyfd);
-    FD_ZERO(&readfd);
-    FD_SET(send_fd, &readfd);
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-
     while(true){
-        //printf("sending\n");
+        //initalize the varaibles
+        fd_set readfd;
+        fd_set emptyfd;
+        FD_ZERO(&emptyfd);
+        FD_ZERO(&readfd);
+        FD_SET(send_fd, &readfd);
+        struct timeval timeout;
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
+
+        //char* str = "sending\n";
+        //write(1,str,strlen(str));
         int status = UDP_Write(send_fd, &saddr, sendMsg, BUFFER_SIZE);
         if(status <= 0 || status != BUFFER_SIZE){
-            printf("error in write\n");
+            char* str = "error in write\n";
+            write(1,str,strlen(str));
             continue;
         }
-        //printf("waiting\n");
-        status = select( send_fd +1, &readfd, &emptyfd, &emptyfd, &timeout);
-        if(status == 1){
+        //str = "waiting\n";
+        //write(1,str,strlen(str));
+
+        int rs = select( send_fd +1, &readfd, &emptyfd, &emptyfd, &timeout);    
+        if(rs > 0 && FD_ISSET(send_fd, &readfd)){
+            //str = "receive\n";
+            //write(1,str,strlen(str));
             struct sockaddr_in raddr;
             status = UDP_Read(send_fd, &raddr, reply, BUFFER_SIZE);
             if(status != BUFFER_SIZE){

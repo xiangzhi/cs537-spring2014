@@ -13,7 +13,7 @@ int
 main(int argc, char *argv[])
 {
 
-    char message[BUFFER_SIZE];
+    //char message[BUFFER_SIZE];
     char reply[BUFFER_SIZE];
     /*
     int sd = UDP_Open(0);
@@ -35,19 +35,18 @@ main(int argc, char *argv[])
     }
     */
     MFS_Init("localhost", 7997);
-    int rtn = MFS_Creat(0, 0, "firDir");
-    printf("return from creat:%d\n", rtn);
-    rtn = MFS_Creat(0, 1, "test");
+    //int rtn = MFS_Creat(0, 0, "firDir");
+    //printf("return from creat:%d\n", rtn);
+    int rtn = MFS_Creat(0, 1, "test");
     printf("return from creat:%d\n", rtn);
     int code = MFS_Lookup(0, "test");
     printf("return froom lookup %d\n", code);    
-    strncpy(message, "START BLOCK 1 END BLOCK 1", 4096);
-    printf("toSend:%s\n", message);
-    rtn = MFS_Write(code ,message, 0);
+    //printf("toSend:%s\n", message);
+    rtn = MFS_Write(code ,"Hello World", 0);
     printf("return from write %d\n", rtn);
     rtn = MFS_Read(code , reply, 0);
-    printf("return from read %d result:%s\n", rtn, reply);
-    rtn = MFS_Lookup(0, "firDir");
+    //printf("return from read %d result:%s\n", rtn, reply);
+    /*rtn = MFS_Lookup(0, "firDir");
     printf("return froom lookup %d\n", rtn);
     rtn = MFS_Lookup(1, ".");
     printf("return froom lookup %d\n", rtn);
@@ -79,7 +78,6 @@ main(int argc, char *argv[])
 
 
 
-    /*
     int rtn = MFS_Lookup(99, "test.rr");
     printf("return %d\n", rtn);
     MFS_Stat_t stat;

@@ -57,9 +57,19 @@ UDP_FillSockAddr(struct sockaddr_in *addr, char *hostName, int port)
 int
 UDP_Write(int fd, struct sockaddr_in *addr, char *buffer, int n)
 {
+    
     int addrLen = sizeof(struct sockaddr_in);
     int rc      = sendto(fd, buffer, n, 0, (struct sockaddr *) addr, addrLen);
-    return rc;
+    return rc;/*
+    static int i = -1;
+    i = (i+1)%3;
+    if(i != 0) {
+      int addrLen = sizeof(struct sockaddr_in);
+      return sendto(fd, buffer, n, 0, (struct sockaddr *) addr, addrLen);
+    } else  {
+      fprintf(stderr, "tester: packet dropped\n");
+      return n; // "sent" packet which "drops"
+    }*/
 }
 
 int
