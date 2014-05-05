@@ -137,10 +137,9 @@ int MFS_Unlink(int pinum, char *name){
 
 int MFS_Shutdown(){
     char message[BUFFER_SIZE];
-    char reply[BUFFER_SIZE];
     snprintf(message, BUFFER_SIZE, "E:");
-    udp_Send(message, reply);
-    return atoi(reply);
+    UDP_Write(send_fd, &saddr, message, BUFFER_SIZE);
+    return 0;
 }
 
 int udp_Send(char* sendMsg, char* reply){

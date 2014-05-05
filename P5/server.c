@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "udp.h"
+#include <stdbool.h>
 //connect with the onsite-fs library
 #include "fs.h"
 
@@ -155,7 +156,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             //tell the other side, the operation is completed
             snprintf(returnBuffer,4096, "0");
             UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
-            //end program          
+            //end program
             exit(0);
         case 'U':
             //printf("Unlink Called\n");
