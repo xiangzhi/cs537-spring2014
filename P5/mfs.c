@@ -162,22 +162,22 @@ int udp_Send(char* sendMsg, char* reply, bool wait){
         struct timeval timeout;
         timeout.tv_sec = 5;
         timeout.tv_usec = 0;
-        char str[5000];
-        sprintf(str, "sending, msg:%s\n", sendMsg);
-        write(1,str,strlen(str));
+        //char str[5000];
+        //sprintf(str, "sending, msg:%s\n", sendMsg);
+        //write(1,str,strlen(str));
         int status = UDP_Write(send_fd, &saddr, sendMsg, BUFFER_SIZE);
         if(status <= 0 || status != BUFFER_SIZE){
             char* str = "error in write\n";
             write(1,str,strlen(str));
             continue;
         }
-        sprintf(str,"waiting\n");
-        write(1,str,strlen(str));
+        //sprintf(str,"waiting\n");
+        //write(1,str,strlen(str));
 
         int rs = select( send_fd +1, &readfd, &emptyfd, &emptyfd, &timeout);    
         if(rs > 0 && FD_ISSET(send_fd, &readfd)){
-            sprintf(str,"receive\n");
-            write(1,str,strlen(str));
+            //sprintf(str,"receive\n");
+            //write(1,str,strlen(str));
             struct sockaddr_in raddr;
             status = UDP_Read(send_fd, &raddr, reply, BUFFER_SIZE);
             if(status != BUFFER_SIZE){
