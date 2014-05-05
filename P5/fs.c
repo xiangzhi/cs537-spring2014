@@ -642,17 +642,21 @@ int getINodeSize(iNode node){
         if(node.dataPtrs[i] == -1){
             continue;
         }
+
         lseek(disk_fd, node.dataPtrs[i], SEEK_SET);
         read(disk_fd, buffer, 4096);
         for(j = 4096 - 1; j >= 0 && !done; j++){
-            if(buffer[j] == '\0'){
+            if( buffer[j] != '\0'){
                 done = true;
                 break;
             }
         }
+	
+	if(done){
+	    break;
+	}
     }
     int size = (i * 4096) + (j + 1);
-    printf("size in get size:%d", size);
     return size; 
 
 }
