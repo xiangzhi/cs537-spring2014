@@ -651,7 +651,8 @@ int getINodeSize(iNode node){
             }
         }
     }
-    int size = (i * 4096) + j;
+    int size = (i * 4096) + (j + 1);
+    printf("size in get size:%d", size);
     return size; 
 
 }
