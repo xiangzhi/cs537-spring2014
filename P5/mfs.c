@@ -77,12 +77,12 @@ int MFS_Write(int inum, char *buffer, int block){
         }
         status = udp_Send(buffer, reply, false);
     }
-
-    char*  str = "in read\n";
+    /*
+    char*  str = "in write\n";
     write(1, str, strlen(str));
     write(1,buffer,strlen(buffer) + 1);
     write(STDOUT_FILENO,"\n",1);
-    
+    */
 
     //make sure the reply is 0;//success
     if(atoi(reply) != 0){
@@ -110,12 +110,12 @@ int MFS_Read(int inum, char *buffer, int block){
         snprintf(message, BUFFER_SIZE, "R:%d:%d:p2", inum, block);
         status = udp_Send(message, buffer, false);
     }
-
+    /*
     char*  str = "in read\n";
     write(1, str, strlen(str));
     write(1,buffer,strlen(buffer) + 1);
     write(STDOUT_FILENO,"\n",1);
-
+    */
     return 0;
 }
 
