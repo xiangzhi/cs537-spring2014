@@ -638,7 +638,7 @@ int getINodeSize(iNode node){
     int j;
     char* buffer[4096];
     bool done = false;
-    for(i = 14; i >= 0 && !done; i--){
+    for(i = 14 - 1; i >= 0 && !done; i--){
         if(node.dataPtrs[i] == -1){
             continue;
         }
