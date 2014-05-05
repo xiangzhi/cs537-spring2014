@@ -188,19 +188,19 @@ int udp_wait(char* reply, int sd, struct sockaddr_in s){
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
 
-    char* str = " server waiting\n";
-    write(1,str,strlen(str));
+    //char* str = " server waiting\n";
+    //write(1,str,strlen(str));
     int rc = select( sd +1, &readfd, &emptyfd, &emptyfd, &timeout);
     if(rc > 0 && FD_ISSET(sd, &readfd)){
-        str = " server receive\n";
-        write(1,str,strlen(str));
+        //str = " server receive\n";
+        //write(1,str,strlen(str));
         int status = UDP_Read(sd, &s, reply, BUFFER_SIZE);
         if(status != BUFFER_SIZE){
             return -1;
         }
         return 0;
     }
-    str = " server timeout\n";
-    write(1,str,strlen(str));
+    //str = " server timeout\n";
+    //write(1,str,strlen(str));
     return -1;
 }

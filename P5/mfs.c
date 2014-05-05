@@ -69,8 +69,6 @@ int MFS_Write(int inum, char *buffer, int block){
     char message[BUFFER_SIZE];
     char reply[BUFFER_SIZE];
     snprintf(message, BUFFER_SIZE, "W:%d:%d", inum, block);
-    udp_Send(message, reply, true);
-
     while(status == -1){
         udp_Send(message, reply, true);
         //make sure the reply is 0;//success
@@ -104,7 +102,7 @@ int MFS_Read(int inum, char *buffer, int block){
             return -1;
         }
         snprintf(message, BUFFER_SIZE, "R:%d:%d:p2", inum, block);
-        status = udp_Send(message, buffer, false);    
+        status = udp_Send(message, buffer, false);
     }
 
     //write(STDOUT_FILENO,buffer,strlen(buffer) + 1);
@@ -162,22 +160,26 @@ int udp_Send(char* sendMsg, char* reply, bool wait){
         struct timeval timeout;
         timeout.tv_sec = 5;
         timeout.tv_usec = 0;
-        char str[5000];
-        sprintf(str, "sending, msg:%s\n", sendMsg);
-        write(1,str,strlen(str));
+
+        //char str[5000];
+        //sprintf(str, "sending, msg:%s\n", sendMsg);
+        //write(1,str,strlen(str));
+
+        //send the message
         int status = UDP_Write(send_fd, &saddr, sendMsg, BUFFER_SIZE);
         if(status <= 0 || status != BUFFER_SIZE){
             char* str = "error in write\n";
             write(1,str,strlen(str));
             continue;
         }
-        sprintf(str,"waiting\n");
-        write(1,str,strlen(str));
+
+        //sprintf(str,"waiting\n");
+        //write(1,str,strlen(str));
 
         int rs = select( send_fd +1, &readfd, &emptyfd, &emptyfd, &timeout);    
         if(rs > 0 && FD_ISSET(send_fd, &readfd)){
-            sprintf(str,"receive\n");
-            write(1,str,strlen(str));
+            //sprintf(str,"receive\n");
+            //write(1,str,strlen(str));
             struct sockaddr_in raddr;
             status = UDP_Read(send_fd, &raddr, reply, BUFFER_SIZE);
             return 0;
