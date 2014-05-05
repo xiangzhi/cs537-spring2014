@@ -90,8 +90,8 @@ int fs_write(int inum, char *buffer, int block){
     //sprintf(str, "wrote:%d at block:%d\n", wrote,block);
     //write(1,str,strlen(str));
     node.size = getINodeSize(node);
-    //sprintf(str, "size:%d\n", node.size);
-    //write(1,str,strlen(str));
+    sprintf(str, "size:%d\n", node.size);
+    write(1,str,strlen(str));
     insertINode(node, inum);
     return 0;
 }
