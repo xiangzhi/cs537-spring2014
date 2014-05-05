@@ -236,9 +236,15 @@ int fs_create(int pinum,  int type, char *name){
     int i;
     int j;
     fs_dir_list dirList;
+    //displayINode(node);
     //make sure the parent has enough space to store a new entry
     for(i = 0; i < 14; i++){
         if(node.dataPtrs[i] == -1){
+            for(j = 0; j < 64; j++){
+                strncpy(dirList.list[j].name,"",60);
+                dirList.list[j].pair = -1;
+            }
+            j = 0;
             break;
         }
         lseek(disk_fd, node.dataPtrs[i], SEEK_SET);
@@ -250,28 +256,15 @@ int fs_create(int pinum,  int type, char *name){
             }
         }
 
-        if(dirList.list[j].pair < 0){
+        if(j < 64 && dirList.list[j].pair < 0){
             break;
         }
     }
-
-    char str[100];
-    sprintf(str,"i:%d,j:%d\n",i,j);
-    write(1, str, strlen(str));
 
     if(i == 14 && j == 64){
         char* str = "folder full";
         write(1,str,strlen(str));
         return -1;
-    }
-
-    //means its a new one for i;
-    if(j == 64){
-        for(j = 0; j < 64; j++){
-            strncpy(dirList.list[j].name,"",60);
-            dirList.list[j].pair = -1;
-        }
-        j = 0;
     }
 
     //printf("new Id:%d", newId);
@@ -289,8 +282,12 @@ int fs_create(int pinum,  int type, char *name){
     //the whole disk is now 
     node.dataPtrs[i] = cp.endPtr;
     writeToEnd((char*)&dirList, sizeof(fs_dir_list));
+
     //update the Inode
     insertINode(node, pinum);
+
+
+
 
     return 0;
 }
@@ -441,7 +438,6 @@ void createEmptyFile(int inum){
     for(int i = 0; i < 14; i++){
         node.dataPtrs[i] = -1;
     }
-
     return insertINode(node, inum);
 }
 
@@ -555,7 +551,6 @@ int deleteINode(int inum){
 }
 
 void insertINode(iNode node, int inum){
-
     int nodePtr = cp.endPtr;
     writeToEnd( (char*)&node, sizeof(iNode));
     //insert the Inode Number into the IMap and CP;
@@ -566,7 +561,6 @@ void insertINode(iNode node, int inum){
             map.ptr[i] = -1;
         }
     }
-
     //make sure the map is pointing at the new node
     map.ptr[getMapEntryNum(inum)] = nodePtr;
 
@@ -583,8 +577,7 @@ int getIMap(int inum, iMap* map){
     //make sure the imap has been initialize
     if(cp.mapPtrs[iMapNum] == 0){
         //the imap is not initialize
-        printf("wrong imap\n");
-
+        //printf("wrong imap\n");
         return -1;
     }
     iMap _map;

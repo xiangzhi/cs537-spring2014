@@ -15,8 +15,8 @@ all: server libmfs.so client
 server: server.o udp.o fs.o
 	$(CC) -o server server.o udp.o fs.o $(CFLAGS)
 
-client: client.o
-	$(CC) -o client client.o udp.o -L. $(CFLAGS) $(MFSLIBS)
+client: client.c
+	$(CC) -o client client.c udp.o -L. $(CFLAGS) $(MFSLIBS)
 
 fs.o: fs.c fs.h
 	$(CC) -c -fpic fs.c fs.h $(CFLAGS)
