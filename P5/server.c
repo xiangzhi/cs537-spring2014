@@ -84,7 +84,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             name = strtok(NULL, ":");
             //printf("pi:%d, name:%s\n", pinum, name);
             rtn = fs_lookup(pinum, name);
-            fs_fsync();
+            //fs_fsync();
             sprintf(output, "%d", rtn);
             break;
         case 'C':
@@ -117,7 +117,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             else{
                 printf("read failed\n");
                 snprintf(output, 4096, "%d", rtn);
-                fs_fsync();
+                //fs_fsync();
             }
             //printf("inum:%d, block:%d, buffer:%s", inum, block, data);           
             break;
@@ -145,7 +145,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             //printf("pi:%d\n", inum);
             stat_t stat;
             fs_stat(inum, &stat);
-            fs_fsync();
+            //fs_fsync();
             memcpy(output, &stat, 4096);
             break;
         case 'E':
