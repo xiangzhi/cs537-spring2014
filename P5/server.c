@@ -111,7 +111,6 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
                 if(status == -1){
                     return -1;
                 }
-                fs_fsync();
                 memcpy(output, data, 4096);
 
             }
