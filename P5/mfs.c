@@ -100,14 +100,14 @@ int MFS_Read(int inum, char *buffer, int block){
     int status = -1;
     char message[BUFFER_SIZE];
     char reply[BUFFER_SIZE];
-    snprintf(message, BUFFER_SIZE, "R:%d:%d:p1", inum, block);
+    snprintf(message, BUFFER_SIZE, "R:1:%d:%d", inum, block);
     while(status == -1){
         udp_Send(message, reply, true);
         //make sure the reply is 0;//success
         if(atoi(reply) != 0){
             return -1;
         }
-        snprintf(message, BUFFER_SIZE, "R:%d:%d:p2", inum, block);
+        snprintf(message, BUFFER_SIZE, "R:2");
         status = udp_Send(message, buffer, false);
     }
     /*

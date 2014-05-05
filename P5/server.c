@@ -72,6 +72,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
     char buffer[BUFFER_SIZE];
     int status;
     int rtn;
+    int part;
 
     switch(*pch){
         case 'I':
@@ -99,6 +100,12 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             break;
         case 'R':
             //printf("Read Called\n");
+            part = atoi(strtok(NULL, ":"));
+            //error
+            if(part != 1){
+                return -1;
+            }
+
             inum = atoi(strtok(NULL, ":"));
             block = atoi(strtok(NULL, ":"));
             char data[BUFFER_SIZE];
@@ -110,6 +117,19 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
                 int status = udp_wait(buffer,sd,s);
                 if(status == -1){
                     return -1;
+                }
+                else{
+                    //make sure the pong string is correct
+                    char* st = strtok(buffer,":");
+                    if(strncmp(st, "R", 1) != 0){
+                        return -1;
+                    }
+                    part = atoi(strtok(NULL,":"));
+                    if(part != 2){
+                        return -1;
+                    }
+
+                    memcpy(output, data, 4096);
                 }
                 memcpy(output, data, 4096);
 
