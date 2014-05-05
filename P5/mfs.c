@@ -62,7 +62,7 @@ int MFS_Stat(int inum, MFS_Stat_t *m){
 int MFS_Write(int inum, char *buffer, int block){
 
     //make sure the input is valid;
-    if(inum < 0 || block < 0 || block > 14){
+    if(inum < 0 || block < 0 || block >= 14){
         return -1;
     }
 
@@ -85,7 +85,7 @@ int MFS_Write(int inum, char *buffer, int block){
 int MFS_Read(int inum, char *buffer, int block){
 
     //make sure the input is valid;
-    if(inum < 0 || block < 0 || block > 14){
+    if(inum < 0 || block < 0 || block >= 14){
         return -1;
     }
 
