@@ -162,7 +162,7 @@ int udp_Send(char* sendMsg, char* reply, bool wait){
         struct timeval timeout;
         timeout.tv_sec = 5;
         timeout.tv_usec = 0;
-        //char str[5000];
+        char str[5000];
         sprintf(str, "sending, msg:%s\n", sendMsg);
         write(1,str,strlen(str));
         int status = UDP_Write(send_fd, &saddr, sendMsg, BUFFER_SIZE);
