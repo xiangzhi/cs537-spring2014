@@ -131,7 +131,7 @@ int processConnection(char input[], char* output, int sd, struct sockaddr_in s){
             snprintf(returnBuffer,4096, "0");
             status = UDP_Write(sd, &s, returnBuffer, BUFFER_SIZE);
             //wait for their reply
-            int status = udp_wait(buffer,sd,s);
+            status = udp_wait(buffer,sd,s);
             if(status == -1){
                 return -1;
             }
@@ -185,7 +185,7 @@ int udp_wait(char* reply, int sd, struct sockaddr_in s){
     FD_ZERO(&readfd);
     FD_SET(sd, &readfd);
     struct timeval timeout;
-    timeout.tv_sec = 1;
+    timeout.tv_sec = 5;
     timeout.tv_usec = 0;
 
     //char* str = "waiting\n";
