@@ -257,6 +257,7 @@ int fs_create(int pinum,  int type, char *name){
 
     char str[100];
     sprintf(str,"i:%d,j:%d\n",i,j);
+    write(1, str, strlen(str));
 
     if(i == 14 && j == 64){
         char* str = "folder full";
@@ -284,8 +285,7 @@ int fs_create(int pinum,  int type, char *name){
     //update the new information
     dirList.list[j].pair = newId;
     strncpy(dirList.list[j].name,name,60);
-    //write the whole dirList to the file system
-    lseek(disk_fd, cp.endPtr, SEEK_SET);
+
     //the whole disk is now 
     node.dataPtrs[i] = cp.endPtr;
     writeToEnd((char*)&dirList, sizeof(fs_dir_list));
@@ -323,19 +323,16 @@ void fs_print(){
                 break;
             }
             if(node.type == 0){
-                int counter = node.size;
                 int k = 0;
-                do{
+                int o = 0;
+                fs_dir_list list;
+                for(;k < 14;k++){
                     lseek(disk_fd, node.dataPtrs[k], SEEK_SET);
-                    fs_dir d;
-                    read(disk_fd, &d, sizeof(fs_dir));
-                    while(d.pair >= 0){    
-                        printf("name:%s par:%d\n", d.name, d.pair);
-                        read(disk_fd, &d, sizeof(fs_dir));
+                    read(disk_fd, &list, sizeof(fs_dir_list));
+                    for(o = 0; o < 64; o++){
+                        printf("o:%d, name:%s par:%d\n",o,  list.list[o].name, list.list[o].pair);
                     }
-                    k++;
-                    counter -= 4096;
-                }while(counter > 0);
+                }
             }
             else{
                 //its afile
