@@ -154,7 +154,7 @@ int udp_Send(char* sendMsg, char* reply){
     while(true){
         //printf("sending\n");
         int status = UDP_Write(send_fd, &saddr, sendMsg, BUFFER_SIZE);
-        if(status <= 0){
+        if(status <= 0 || status != BUFFER_SIZE){
             printf("error in write\n");
             continue;
         }
@@ -163,6 +163,9 @@ int udp_Send(char* sendMsg, char* reply){
         if(status == 1){
             struct sockaddr_in raddr;
             status = UDP_Read(send_fd, &raddr, reply, BUFFER_SIZE);
+            if(status != BUFFER_SIZE){
+                continue;
+            }
             //printf("CLIENT:: read %d bytes (message: '%s')\n", status, reply);
             break;
         }

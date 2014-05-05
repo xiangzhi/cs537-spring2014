@@ -39,7 +39,7 @@ main(int argc, char *argv[])
         char buffer[BUFFER_SIZE];
         char returnBuffer[BUFFER_SIZE];
         int rc = UDP_Read(sd, &s, buffer, BUFFER_SIZE);
-            if (rc > 0){
+            if (rc == 4096){
                 //printf("SERVER:: read %d bytes (message: '%s')\n", rc, buffer);
                 int status = processConnection(buffer, returnBuffer, sd, s);
                 if(status != 0){

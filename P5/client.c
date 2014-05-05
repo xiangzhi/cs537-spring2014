@@ -35,11 +35,11 @@ main(int argc, char *argv[])
     }
     */
     MFS_Init("localhost", 7997);
-    //int rtn = MFS_Creat(0, 0, "firDir");
-    //printf("return from creat:%d\n", rtn);
-    int rtn = MFS_Creat(0, 1, "firstFILE");
+    int rtn = MFS_Creat(0, 0, "firDir");
     printf("return from creat:%d\n", rtn);
-    int code = MFS_Lookup(0, "firstFILE");
+    rtn = MFS_Creat(0, 1, "test");
+    printf("return from creat:%d\n", rtn);
+    int code = MFS_Lookup(0, "test");
     printf("return froom lookup %d\n", code);    
     strncpy(message, "START BLOCK 1 END BLOCK 1", 4096);
     printf("toSend:%s\n", message);
@@ -47,7 +47,6 @@ main(int argc, char *argv[])
     printf("return from write %d\n", rtn);
     rtn = MFS_Read(code , reply, 0);
     printf("return from read %d result:%s\n", rtn, reply);
-    /*
     rtn = MFS_Lookup(0, "firDir");
     printf("return froom lookup %d\n", rtn);
     rtn = MFS_Lookup(1, ".");
@@ -77,7 +76,7 @@ main(int argc, char *argv[])
     printf("return froom lookup after unlink %d\n", rtn);
     rtn = MFS_Stat(1 , &stat_t);
     printf("return from stat: size:%d, type:%d\n", stat_t.size, stat_t.type);
-    */
+
 
 
     /*
