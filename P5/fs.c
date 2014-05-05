@@ -22,7 +22,7 @@ void displayINode(iNode node);
 void displayCP(checkPoint cp);
 int deleteINode(int inum);
 int writeToEnd(char* buffer, int size);
-int getSize(char* buffer);
+int getINodeSize(iNode node);
 
 int fs_init(char* fileName){
 
@@ -84,17 +84,12 @@ int fs_write(int inum, char *buffer, int block){
         return -1;
     }
     
-    //get original size at that block
-    if(node.dataPtrs[block] != -1){
-        node.size -= 4096;
-    }
-    
     node.dataPtrs[block] = cp.endPtr;
-    int wrote =  writeToEnd(buffer, 4096);
+    writeToEnd(buffer, 4096);
     //char str[100];
     //sprintf(str, "wrote:%d at block:%d\n", wrote,block);
     //write(1,str,strlen(str));
-    node.size += wrote;
+    node.size = getINodeSize(node);
     //sprintf(str, "size:%d\n", node.size);
     //write(1,str,strlen(str));
     insertINode(node, inum);
@@ -638,13 +633,26 @@ int writeToEnd(char* buffer, int size){
     return wrote;
 }
 
-int getSize(char* buffer){
+int getINodeSize(iNode node){
     int i;
-    for(i = 4095; i >= 0; i--){
-        if(buffer[i] != '\0'){
-            return i+1;
+    int j;
+    char* buffer[4096];
+    bool done = false;
+    for(i = 14; i >= 0 && !done; i--){
+        if(node.dataPtrs[i] == -1){
+            continue;
+        }
+        lseek(disk_fd, node.dataPtrs[i], SEEK_SET);
+        read(disk_fd, buffer, 4096);
+        for(j = 4096 - 1; j >= 0 && !done; j++){
+            if(buffer[j] == '\0'){
+                done = true;
+                break;
+            }
         }
     }
-    return 0;
+    int size = (i * 4096) + j;
+    return size; 
+
 }
 
