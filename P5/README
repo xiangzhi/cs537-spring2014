@@ -1,0 +1,13 @@
+CS537 - Spring 2014 - Program 5
+CREATED BY:  
+Xiang Zhi Tan (xtan@cs.wisc.edu)
+Roy Fang (fang@cs.wisc.edu)
+ 
+Linux Part:
+A simple server file distribution system based on the mfs.h. 
+Client Side:
+
+The client side can call the server through the mfslib.so library. The library calls the server through UDP package according to our protocol. The protocol is quite simple. The first character is the type of operation(R=read, U=unlink) and follow by the arguments, each separated by a ":". The client continuously try each operation until success.
+
+Server Side:
+We tried to separate the implementation of the server from the file system. The file system is manipulate in the fs.h and fs.c files. fs.h contains similar functions as those defined in mfs.h but contain additional methods to help with server side operations. The fs.h implements a log-based file system and can store a maximum of 4096 files/directory. The size of each file is calculated by the offset + 1 of the last null character in the file. Each functions is documented in the fs.h file. The server side does not know anything about the file system. The server.c implements the server that receive the UDP from client and calls the corresponding functions in fs.h. For operations that require multiple exchange with the client, if the server does not receive the package from the client, it times out and don't care about the prior operation.

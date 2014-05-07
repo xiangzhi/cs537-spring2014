@@ -1,35 +1,43 @@
-#include "fs.h"
-#include <stdbool.h>
+/* CS537 - Spring 2014 - Program 5
+ * CREATED BY:  
+ * Xiang Zhi Tan (xtan@cs.wisc.edu)
+ * Roy Fang (fang@cs.wisc.edu)
+ */
 
+#include "fs.h"
+
+/** Global Variables **/
+
+//file descriptor for the harddisk
 int disk_fd;
 //to store and manipulate the checkPoint region
+//faster access than reading from memory.
 checkPoint cp;
-
 
 
 /** internal helpers **/
 int getIMapNum(int pinum);
-int getMapEntryNum(int inum);
+int getMapIndexNum(int inum);
 int createEmptyDirectory(int inum, int pinum);
 int getINode(int inum, iNode* node);
 int getIMap(int inum, iMap* map);
 int getNextId();
-void copyNode(iNode* node1, iNode* node2);
-void copyMap(iMap* node1, iMap* node2);
-void insertINode(iNode node, int inum);
-void createEmptyFile(int pinum);
-void displayINode(iNode node);
-void displayCP(checkPoint cp);
+int insertINode(iNode node, int inum);
+int createEmptyFile(int pinum);
 int deleteINode(int inum);
 int writeToEnd(char* buffer, int size);
 int getINodeSize(iNode node);
 
+/**
+ * fs_init
+ * description in header
+ */
 int fs_init(char* fileName){
 
     //check whether the file access
     if( access(fileName, F_OK) != -1 ){
         //file exists
-        //printf("file exists");
+
         //open the file
         disk_fd = open(fileName, O_RDWR,S_IRWXU);
         if(disk_fd < 0){
@@ -47,7 +55,7 @@ int fs_init(char* fileName){
     }
     else{
         //file doesn't exist
-        //printf("file doesn't exists");
+
         //create the new file
         disk_fd = open(fileName, O_RDWR|O_CREAT,S_IRWXU);
 
@@ -59,19 +67,18 @@ int fs_init(char* fileName){
 
         //initialize the checkpoint region
         //create the first inode
-        cp.endPtr = 4096; //0-4095 is the CR
+        cp.endPtr = sizeof(checkPoint); //0-4095 is the CR
 
         //create an Empty directory at that location
         createEmptyDirectory(0, 0);
     }
-    /*
-    for(int j = 0; j < 100; j++){
-        printf("num:%d, return%d\n", j, getMapEntryNum(j));
-    }*/
     return 0;
-    //fs_print();
 }
 
+/**
+ * fs_write
+ * description in header
+ */
 int fs_write(int inum, char *buffer, int block){
 
     iNode node;
@@ -81,19 +88,17 @@ int fs_write(int inum, char *buffer, int block){
     }
 
     if(node.type == FS_DIRECTORY){
+        //the iNode refers to Directory, fails
         return -1;
     }
     
+    //save the data region to write
     node.dataPtrs[block] = cp.endPtr;
-    writeToEnd(buffer, 4096);
-    //char str[100];
-    //sprintf(str, "wrote:%d at block:%d\n", wrote,block);
-    //write(1,str,strlen(str));
+    //write to file
+    writeToEnd(buffer, BUFFER_SIZE);
+    //calculate the new size
     node.size = getINodeSize(node);
-    /*
-    sprintf(str, "size:%d\n", node.size);
-    write(1,str,strlen(str));
-    */
+    //update the inum
     insertINode(node, inum);
     return 0;
 }
@@ -105,13 +110,15 @@ int fs_read(int inum, char *buffer, int block){
         return -1;
     }
     if(node.type == FS_REGULAR_FILE){
+        //if its regular file,  just write it
         lseek(disk_fd, node.dataPtrs[block], SEEK_SET);
-        read(disk_fd, buffer, 4096);
-        return 0;
-        //printf("read buffer:%s\n",buffer);        
+        read(disk_fd, buffer, BUFFER_SIZE);
+        return 0;     
     }
     else{
-        //get name of the directory
+        //if its a directory
+
+        //find parent to get the name
         fs_dir_list childList;
         lseek(disk_fd, node.dataPtrs[0], SEEK_SET);
         read(disk_fd, &childList, sizeof(fs_dir_list));
@@ -123,6 +130,7 @@ int fs_read(int inum, char *buffer, int block){
         //get parent's directory
         lseek(disk_fd, pnode.dataPtrs[0], SEEK_SET);
         read(disk_fd, &pList, sizeof(fs_dir_list));
+        //loop through the parent's list to find the pairing.
         for(int i = 0; i < 64; i++){
             if(pList.list[i].pair < 0){
                 continue;
@@ -136,6 +144,10 @@ int fs_read(int inum, char *buffer, int block){
     }
 }
 
+/**
+ * fs_unlink
+ * description in header
+ */
 int fs_unlink(int pinum, char *name){
     iNode node;
     if(getINode(pinum, &node) == -1){
@@ -151,6 +163,7 @@ int fs_unlink(int pinum, char *name){
     int j;
     bool found = false;
     fs_dir_list list;
+    //loop through the parent's directory list to find the pairing
     for(i = 0; i < 14; i++){
         if(node.dataPtrs[i] == -1){
             continue;
@@ -162,12 +175,17 @@ int fs_unlink(int pinum, char *name){
             if(list.list[j].pair < 0){
                 continue;
             }
+            //check if the name is the same
             if(strncmp(name, list.list[j].name, 60) == 0){
-                strncpy(list.list[j].name, "", 60);
+                //if yes,  try deleting the inode first
                 int stat = deleteINode(list.list[j].pair);
+                //if can fail because its a directory and 
+                //the chidlren is not deleted
                 if(stat == -1){
                     return -1;
                 }
+                //delete the information
+                strncpy(list.list[j].name, "", 60);
                 list.list[j].pair = -1;
                 found = true;
                 break;
@@ -179,47 +197,52 @@ int fs_unlink(int pinum, char *name){
         }
 
     }
+
+    //if both counter is MAXED out, means they cannot find it
     if(i == 14 && j == 64){
         //didn't found it
         return 0;
     }
 
-    int region = cp.endPtr;
+    //update the new region for the new directory list
+    node.dataPtrs[i] = cp.endPtr;
 
-    //write plus increment pointer;
+    //write data to the region
     lseek(disk_fd, cp.endPtr, SEEK_SET);    
     write(disk_fd, &list, sizeof(fs_dir_list));
     cp.endPtr += sizeof(fs_dir_list);
-
-    node.dataPtrs[i] = region;
+    //update i_Node
     insertINode(node, pinum);
     return 0;
 }
 
+/**
+ * fs_close
+ * description in header
+ */
 int fs_close(){
     fs_fsync();
     close(disk_fd);
-    //done
     return 0;
 }
 
+/**
+ * fs_create
+ * description in header
+ */
 int fs_create(int pinum,  int type, char *name){
-    //printf("inum:%d, type:%d, name:%s\n", pinum, type, name);
     //check whether already exist already exist
     if( fs_lookup(pinum, name) != -1){
-        //printf("already exist\n");
         return 0;
     }
 
     iNode node;
+    //make sure we can find the parent
     if(getINode(pinum, &node) == -1){
-        //cannot find Inode
-        //printf("cannot find parent's Inode");
         return -1;
     }    
     //make sure the node is a directory;
     if(node.type != FS_DIRECTORY){
-        //printf("pi not directory");
         return -1;
     }
 
@@ -233,10 +256,13 @@ int fs_create(int pinum,  int type, char *name){
     int i;
     int j;
     fs_dir_list dirList;
-    //displayINode(node);
-    //make sure the parent has enough space to store a new entry
+
+    //loop through the parent's directory list to find an 
+    //empty spot to insert the new file
     for(i = 0; i < 14; i++){
+        //the data region is not initialized
         if(node.dataPtrs[i] == -1){
+            //initialize it
             for(j = 0; j < 64; j++){
                 strncpy(dirList.list[j].name,"",60);
                 dirList.list[j].pair = -1;
@@ -245,9 +271,9 @@ int fs_create(int pinum,  int type, char *name){
             break;
         }
         lseek(disk_fd, node.dataPtrs[i], SEEK_SET);
-        //get the parent's directory list
         read(disk_fd, &dirList, sizeof(fs_dir_list));
         for(j = 0; j < 64; j++){
+            //found an empty part
             if(dirList.list[j].pair < 0){
                 break;
             }
@@ -258,13 +284,12 @@ int fs_create(int pinum,  int type, char *name){
         }
     }
 
+    //if MAXED out, means the folder is full
     if(i == 14 && j == 64){
-        char* str = "folder full";
-        write(1,str,strlen(str));
         return -1;
     }
 
-    //printf("new Id:%d", newId);
+    //depend on type, create different elements
     if(type == FS_DIRECTORY){
         createEmptyDirectory(newId, pinum);
     }
@@ -276,77 +301,19 @@ int fs_create(int pinum,  int type, char *name){
     dirList.list[j].pair = newId;
     strncpy(dirList.list[j].name,name,60);
 
-    //the whole disk is now 
+    //write the new parent's directory list
     node.dataPtrs[i] = cp.endPtr;
     writeToEnd((char*)&dirList, sizeof(fs_dir_list));
 
     //update the Inode
     insertINode(node, pinum);
-
-
-
-
     return 0;
 }
 
-
-void fs_print(){
-    int endPtr = cp.endPtr;
-    printf("endPointer:%d\n", endPtr);
-    printf("each INode:\n");
-
-    for(int i = 0; i < 1; i++){
-        int id = cp.mapPtrs[i];
-        printf("ptr %d: ptr->%d\n", i, id);
-        //move to the IMap area
-        lseek(disk_fd, id, SEEK_SET);
-        iMap map;
-        //read the whole are
-        read(disk_fd, &map, sizeof(iMap));
-        for(int j = 0; j < 16; j++){
-            //printf("location:%d\n", map.ptr[j]);
-            if(map.ptr[j] < 0){
-                continue;
-            }
-            iNode node;
-            lseek(disk_fd,map.ptr[j], SEEK_SET);
-            read(disk_fd, &node, sizeof(iNode));
-            printf("size:%d, type:%d\n",node.size, node.type);
-
-            if(node.type != 1 && node.type != 0){
-                break;
-            }
-            if(node.type == 0){
-                int k = 0;
-                int o = 0;
-                fs_dir_list list;
-                for(;k < 14;k++){
-                    lseek(disk_fd, node.dataPtrs[k], SEEK_SET);
-                    read(disk_fd, &list, sizeof(fs_dir_list));
-                    for(o = 0; o < 64; o++){
-                        printf("o:%d, name:%s par:%d\n",o,  list.list[o].name, list.list[o].pair);
-                    }
-                }
-            }
-            else{
-                //its afile
-                void* ptr = malloc(node.size);
-                void* writePtr = ptr;
-                int counter = node.size;
-                //int read = 0;
-                int k = 0;
-                while(counter > 4096){
-                    //nothing yet
-                }
-                lseek(disk_fd, node.dataPtrs[k], SEEK_SET);
-                read(disk_fd, writePtr, (uint)counter);
-                //printf("%p", ptr);
-            }
-        }
-    }
-}
-
-
+/**
+ * fs_stat
+ * description in header
+ */
 int fs_stat(int inum, stat_t *m){
     iNode node;
     if(getINode(inum, &node) == -1){
@@ -354,81 +321,98 @@ int fs_stat(int inum, stat_t *m){
         return -1;
     }
 
+    //copy the needed informations
     m->size = node.size;
     m->type = node.type;
     return 0;
 }
 
-void fs_fsync(){
+/**
+ * fs_fsync
+ * description in header
+ */
+int fs_fsync(){
     lseek(disk_fd, 0, SEEK_SET);
     //write back the critical region
-    int stat = 0;
-    stat = write(disk_fd, &cp, sizeof(checkPoint));
-    //printf("\nstat:%d,  size of checkpoint:%lu\n", stat, sizeof(checkPoint));
-    fsync(disk_fd);
+    int stat = write(disk_fd, &cp, sizeof(checkPoint));
+    if(stat < 0){
+        return -1;
+    }
+    return fsync(disk_fd);
 }
 
-//lookup the filename at the parent directory given by pinum
-// - pinum: parent's inode number
-// - name: filename to be search
-// - rtn: file's inode number
-// status: as far as I know, correct
+/**
+ * fs_lookup
+ * description in header
+ */
 int fs_lookup(int pinum, char *name){
 
-    //printf("inum:%d, name:%s\n", pinum, name);
     iNode node;
     if(getINode(pinum, &node) == -1){
         //cannot find Inode
-        //printf("cannot find in lookup\n");
         return -1;
     }
 
     //the inode is not a directory
     if(node.type != FS_DIRECTORY){
-        printf("not directory\n");
         return -1;
     }
 
     fs_dir_list list;
-    int i;
-    for(i = 0 ; i < 14; i++){
+    //loop through the whole parent's directory to find the pairing.
+    for(int i = 0 ; i < 14; i++){
         if(node.dataPtrs[i] == -1){
             continue;
         }
 
         lseek(disk_fd, node.dataPtrs[i], SEEK_SET);
         read(disk_fd, &list, sizeof(fs_dir_list));
+
         for(int j = 0; j < 64; j++){
-            //reach the end of directory list;
+    
             if(list.list[j].pair < 0){
                 continue;
             }
+
             if(strncmp(name, list.list[j].name, 60) == 0){
-                //printf("name:%s, par:%d\n", list.list[j].name, list.list[j].pair);
                 return list.list[j].pair;
             }
         }
     }
-    //cannot find it
-    //printf("cannot find in lookup\n");
+
     return -1;
 }
 
 
 /** helper functions **/
 
-//returns the correct Imap number for any number
-// - pinum: the inode number
+/**
+ * getIMapNum
+ * returns the correct Imap number of any number
+ * - pinum: the inode number
+ * - return: the Imap number
+ */
 int getIMapNum(int inum){
     return inum >> 4;
 }
 
-//returns the correct entry num
-int getMapEntryNum(int inum){
+/**
+ * getMapIndexNum
+ * returns the correct map index number
+ * - inum: the inode number
+ * - return: the map entry index
+ */
+int getMapIndexNum(int inum){
     return (inum & 0xF);
 }
 
-void createEmptyFile(int inum){
+/**
+ * createEmptyFile
+ * create an Empty File and insert it
+ * - inum: iNode number of the file
+ * return: 0 for success, -1 if failed
+ */
+int createEmptyFile(int inum){
     iNode node;
     node.size = 0;
     node.type = FS_REGULAR_FILE;
@@ -438,11 +422,14 @@ void createEmptyFile(int inum){
     return insertINode(node, inum);
 }
 
-//creates an emptry directory data at end of Ptr
-// - inum: inode number of the directory
-// - pinum: parent's inode number
-// this increments the cp.endPtr;
-//return the pointer to the next free space
+
+/**
+ * createEmptyDirectory
+ * creates an emptry directory data and insert it
+ * - inum: inode number of the directory
+ * - pinum: parent's inode number
+ * - return: 0 for success, -1 if failed
+ */
 int createEmptyDirectory(int inum, int pinum){
 
     //create the directory data region
@@ -452,7 +439,7 @@ int createEmptyDirectory(int inum, int pinum){
         dirList.list[i].pair = -1;
         strncpy(dirList.list[i].name, "", 60);
     }
-
+    //create the . and ..
     strncpy(dirList.list[0].name, ".", 60);
     dirList.list[0].pair = inum;
     strncpy(dirList.list[1].name, "..", 60);
@@ -467,11 +454,17 @@ int createEmptyDirectory(int inum, int pinum){
     }
     node.dataPtrs[0] = dataRegion;
     node.type = FS_DIRECTORY;
-    node.size = 4096;
-    insertINode(node, inum);
-    return 1;
+    node.size = BUFFER_SIZE;
+    return insertINode(node, inum);
 }
 
+/**
+ * getINode
+ * tries getting the INode of the INode number given
+ * - inum: the INode number
+ * - node: to store the Inode
+ * return: 0 for success, -1 if failed
+ */
 int getINode(int inum, iNode* node){
 
     iMap map;
@@ -480,7 +473,7 @@ int getINode(int inum, iNode* node){
         return -1;
     }
 
-    int ptr = map.ptr[getMapEntryNum(inum)];
+    int ptr = map.ptr[getMapIndexNum(inum)];
     //check whether the inode was created
     if(ptr == -1){
         //yap,  there is an inode;
@@ -489,20 +482,32 @@ int getINode(int inum, iNode* node){
     }
 
     //now go read the inode
-    iNode _node;
     lseek(disk_fd, ptr, SEEK_SET);
-    read(disk_fd, &_node, sizeof(iNode));
-    copyNode(node, &_node);
+    int status = read(disk_fd, node, sizeof(iNode));
+    //make sure the read was successful
+    if(status < 0){
+        return -1;
+    }
     return 0;
 }
 
+/**
+ * getINode
+ * tries deleting the iNode and related files
+ * - inum: the INode number
+ * return: 0 for success, -1 if failed
+ */
 int deleteINode(int inum){
 
     //check whether its a direcotry
     iNode node;
-    getINode(inum, &node);
-    if(node.type == FS_DIRECTORY){
+    if(getINode(inum, &node) == -1){
+        //try deleting and INode that never exists
+        return 0;
+    };
 
+    if(node.type == FS_DIRECTORY){
+        //if its a directory
         int i;
         int j;
         fs_dir_list dirList;
@@ -516,7 +521,7 @@ int deleteINode(int inum){
             //get the parent's directory list
             read(disk_fd, &dirList, sizeof(fs_dir_list));
 
-            //to fix the first 2 entries;
+            //to avoid the first 2 entries, . and ..
             if(i == 0){
                 j = 2;
             }
@@ -534,22 +539,31 @@ int deleteINode(int inum){
 
 
     iMap map;
-    if(getIMap(inum, &map) == -1){
-        printf("no imap in deleteInode\n");
-        return 0;
-    }
+    //update the IMaps
+    getIMap(inum, &map);
 
     //update the map pointer
-    map.ptr[getMapEntryNum(inum)] = -1;
+    map.ptr[getMapIndexNum(inum)] = -1;
 
     cp.mapPtrs[getIMapNum(inum)] = cp.endPtr;
     writeToEnd( (char*)&map, sizeof(iMap));
     return 0;
 }
 
-void insertINode(iNode node, int inum){
+/**
+ * insetINode
+ * tries insert or update if exist and Inode
+ * with the iNode number
+ * - inum: the INode number
+ * - node: the node to be stored
+ * return: 0 for success, -1 if failed
+ */
+int insertINode(iNode node, int inum){
     int nodePtr = cp.endPtr;
-    writeToEnd( (char*)&node, sizeof(iNode));
+    int status = writeToEnd( (char*)&node, sizeof(iNode));
+    if(status < 0){
+        return -1;
+    }
     //insert the Inode Number into the IMap and CP;
     iMap map;
     //iMap not initialize, need to create new one
@@ -559,65 +573,50 @@ void insertINode(iNode node, int inum){
         }
     }
     //make sure the map is pointing at the new node
-    map.ptr[getMapEntryNum(inum)] = nodePtr;
+    map.ptr[getMapIndexNum(inum)] = nodePtr;
 
     //make sure the cp is pointing at the new map
     cp.mapPtrs[getIMapNum(inum)] = cp.endPtr;
     //write the new map to the end
-    writeToEnd( (char*)&map, sizeof(iMap));
+    status = writeToEnd( (char*)&map, sizeof(iMap));
+    if(status < 0){
+        return -1;
+    }
+    return 0;
 }
 
+/**
+ * getMap
+ * tries getting the IMap of the INode number given
+ * - inum: the INode number
+ * - map: to store the map
+ * return: 0 for success, -1 if failed
+ */
 int getIMap(int inum, iMap* map){
     //get the which IMap the parent is int
     int iMapNum = getIMapNum(inum);
-    //printf("iMapNum:%d\n", iMapNum);
     //make sure the imap has been initialize
     if(cp.mapPtrs[iMapNum] == 0){
         //the imap is not initialize
-        //printf("wrong imap\n");
         return -1;
     }
-    iMap _map;
     //read Imap
     lseek(disk_fd, cp.mapPtrs[iMapNum], SEEK_SET);
-    read(disk_fd, &_map, sizeof(iMap));
-
-    copyMap(map, &_map); 
+    int status = read(disk_fd, &map, sizeof(iMap));
+    if(status < 0){
+        return -1;
+    }
     return 0;   
 }
 
-void copyMap(iMap* map1, iMap* map2){
-    for(int i = 0; i < 16; i++){
-        map1->ptr[i] = map2->ptr[i];
-    }    
-}
-
-void copyNode(iNode* node1, iNode* node2){
-    node1->type = node2->type;
-    node1->size = node2->size;
-    for(int i = 0; i < 14; i++){
-        node1->dataPtrs[i] = node2->dataPtrs[i];
-    }
-}
-
-void displayINode(iNode node){
-    printf("type:%d, size:%d\n", node.type, node.size);
-    for(int i = 0; i < 14; i++){
-        printf("nodePtr %d: %d\n", i, node.dataPtrs[i]);
-    }
-}
-
-void displayCP(checkPoint cp){
-    printf("\n\nendPointer:%d\n", cp.endPtr);
-    for(int i = 0; i < 256;i++){
-        if(cp.mapPtrs[i] != 0)
-        printf("iMap %d:%d\n", i, cp.mapPtrs[i]);
-    }
-}
-
+/**
+ * getNextId
+ * returns the next available ID
+ * return: id when success, -1 if cannot find one
+ */
 int getNextId(){
     iNode node;
-    for(int i = 0; i < 4096; i++){
+    for(int i = 0; i < BUFFER_SIZE; i++){
         if(getINode(i, &node) == -1){
             return i;
         }
@@ -625,41 +624,59 @@ int getNextId(){
     return -1;
 }
 
+/**
+ * writeToEnd
+ * write the buffer to the end of the data disk
+ * - buffer : the buffer to be written
+ * - size: the size to be written
+ * return: whether its successful
+ */
 int writeToEnd(char* buffer, int size){
     int status = lseek(disk_fd, cp.endPtr, SEEK_SET);
-    assert(status != -1);
-
-    int wrote = write(disk_fd, buffer, size);  
-    assert(wrote >= 0);
+    if(status < 0){
+        return -1;
+    }
+    //try writing it
+    int wrote = write(disk_fd, buffer, size);
+    if(wrote < 0){
+        return wrote;
+    } 
+    //update pointer
     cp.endPtr += wrote;
     return wrote;
 }
 
+/**
+ * getINodeSize
+ * gets the size of the INode according to the specifications
+ * - iNode: the iNode
+ * return: size of the file stored by the INode
+ */
 int getINodeSize(iNode node){
     int i;
     int j;
-    char* buffer[4096];
+    char* buffer[BUFFER_SIZE];
     bool done = false;
+    //loop through all the data pointer from the back
     for(i = 14 - 1; i >= 0 && !done; i--){
         if(node.dataPtrs[i] == -1){
             continue;
         }
 
         lseek(disk_fd, node.dataPtrs[i], SEEK_SET);
-        read(disk_fd, buffer, 4096);
-        for(j = 4096 - 1; j >= 0 && !done; j++){
+        read(disk_fd, buffer, BUFFER_SIZE);
+        for(j = BUFFER_SIZE - 1; j >= 0 && !done; j++){
             if( buffer[j] != '\0'){
                 done = true;
                 break;
             }
         }
-	
-	if(done){
-	    break;
-	}
+        if(done){
+	       break;
+        }
     }
-    int size = (i * 4096) + (j + 1);
-    return size; 
+    //calculate and return the size
+    return (i * BUFFER_SIZE) + (j + 1);
 
 }
 
